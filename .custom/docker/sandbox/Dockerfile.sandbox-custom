@@ -1,0 +1,32 @@
+# [CUSTOM] 扩展 dify-sandbox 镜像，添加系统依赖
+# 支持 AMD64 和 ARM64 架构
+# 文档: .custom/docs/migrate_docs/FORK_PRD_MIGRATION.md
+
+ARG BASE_IMAGE=langgenius/dify-sandbox:0.2.12
+FROM ${BASE_IMAGE}
+
+# 安装系统依赖
+COPY system-requirements.txt /tmp/
+RUN apt-get update && \
+    xargs -a /tmp/system-requirements.txt apt-get install -y --no-install-recommends && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/system-requirements.txt
+
+# 关键：创建无版本号的符号链接
+# ctypes.util.find_library('zbar') 在目录搜索模式下会查找 libzbar.so
+# 但 apt 安装的是 libzbar.so.0，需要创建符号链接
+RUN ARCH_DIR=$(dpkg-architecture -qDEB_HOST_MULTIARCH) && \
+    # zbar 库符号链接
+    if [ -f /usr/lib/$ARCH_DIR/libzbar.so.0 ]; then \
+        ln -sf libzbar.so.0 /usr/lib/$ARCH_DIR/libzbar.so; \
+        echo "Created symlink: /usr/lib/$ARCH_DIR/libzbar.so -> libzbar.so.0"; \
+    fi && \
+    # 更新 ldconfig 缓存
+    ldconfig
+
+# 验证库可被发现
+RUN echo "=== Verifying library installation ===" && \
+    ldconfig -p | grep -E "(zbar|gl)" || true && \
+    echo "=== Library files ===" && \
+    ls -la /usr/lib/*/libzbar* 2>/dev/null || echo "No libzbar files found" && \
+    echo "=== Build complete ==="

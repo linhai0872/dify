@@ -19,7 +19,8 @@ type Props = {
   onChange: (value: string) => void
 }
 
-const TYPES = [VarType.string, VarType.number, VarType.boolean, VarType.arrayNumber, VarType.arrayString, VarType.arrayBoolean, VarType.arrayObject, VarType.object]
+// [CUSTOM] 添加 file 和 arrayFile 类型支持代码节点文件输出
+const TYPES = [VarType.string, VarType.number, VarType.boolean, VarType.arrayNumber, VarType.arrayString, VarType.arrayBoolean, VarType.arrayObject, VarType.object, VarType.file, VarType.arrayFile]
 const VarReferencePicker: FC<Props> = ({
   readonly,
   className,
