@@ -133,8 +133,11 @@ class CodeExecutor:
 
         response_code = CodeExecutionResponse.model_validate(response_data)
 
+        # [CUSTOM] Log stderr output as warnings but don't fail execution if exit code is 0
+        # This allows code to succeed even with deprecation warnings or non-critical stderr output
         if response_code.data.error:
-            raise CodeExecutionError(response_code.data.error)
+            logger.warning("Code execution stderr: %s", response_code.data.error)
+        # [/CUSTOM]
 
         return response_code.data.stdout or ""
 

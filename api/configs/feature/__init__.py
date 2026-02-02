@@ -173,6 +173,13 @@ class CodeExecutionSandboxConfig(BaseSettings):
         default=True,
     )
 
+    # [CUSTOM] 代码节点文件大小限制 (MB)
+    CODE_MAX_FILE_SIZE: PositiveInt = Field(
+        description="Maximum file size for code node output in MB",
+        default=50,
+    )
+    # [/CUSTOM]
+
 
 class TriggerConfig(BaseSettings):
     """
