@@ -940,7 +940,8 @@ services:
 
   # The DifySandbox
   sandbox:
-    image: langgenius/dify-sandbox:0.2.12
+    # [CUSTOM] 支持通过环境变量切换自定义镜像
+    image: ${SANDBOX_IMAGE:-langgenius/dify-sandbox:0.2.12}
     restart: always
     environment:
       # The DifySandbox configurations
