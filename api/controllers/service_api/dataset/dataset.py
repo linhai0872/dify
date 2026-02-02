@@ -19,6 +19,7 @@ from core.provider_manager import ProviderManager
 from fields.dataset_fields import dataset_detail_fields
 from fields.tag_fields import build_dataset_tag_fields
 from libs.login import current_user
+from libs.request_parsing import parse_and_validate
 from models.account import Account
 from models.dataset import DatasetPermissionEnum
 from models.provider_ids import ModelProviderID
@@ -122,7 +123,8 @@ class DatasetListApi(DatasetApiResource):
     )
     def get(self, tenant_id):
         """Resource for getting datasets."""
-        query = DatasetListQuery.model_validate(request.args.to_dict(flat=False))
+        # [CUSTOM] 修复上游 bug: flat=False 导致 Pydantic 验证失败
+        query = parse_and_validate(request, DatasetListQuery)
         # provider = request.args.get("provider", default="vendor")
 
         datasets, total = DatasetService.get_datasets(

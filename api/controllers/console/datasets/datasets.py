@@ -50,6 +50,7 @@ from fields.dataset_fields import (
 )
 from fields.document_fields import document_status_fields
 from libs.login import current_account_with_tenant, login_required
+from libs.request_parsing import parse_and_validate
 from models import ApiToken, Dataset, Document, DocumentSegment, UploadFile
 from models.dataset import DatasetPermissionEnum
 from models.provider_ids import ModelProviderID
@@ -286,7 +287,8 @@ class DatasetListApi(Resource):
     @enterprise_license_required
     def get(self):
         current_user, current_tenant_id = current_account_with_tenant()
-        query = ConsoleDatasetListQuery.model_validate(request.args.to_dict(flat=False))
+        # [CUSTOM] 修复上游 bug: flat=False 导致 Pydantic 验证失败
+        query = parse_and_validate(request, ConsoleDatasetListQuery)
         # provider = request.args.get("provider", default="vendor")
         if query.ids:
             datasets, total = DatasetService.get_datasets_by_ids(query.ids, current_tenant_id)
