@@ -15,6 +15,8 @@ class CodeLanguage(StrEnum):
     JAVASCRIPT = "javascript"
 
 
+# [CUSTOM] 扩展代码节点允许的输出类型
+# 添加 FILE 和 ARRAY_FILE 支持文件生成功能
 _ALLOWED_OUTPUT_FROM_CODE = frozenset(
     [
         SegmentType.STRING,
@@ -25,8 +27,11 @@ _ALLOWED_OUTPUT_FROM_CODE = frozenset(
         SegmentType.ARRAY_NUMBER,
         SegmentType.ARRAY_OBJECT,
         SegmentType.ARRAY_BOOLEAN,
+        SegmentType.FILE,        # [CUSTOM] 单文件输出
+        SegmentType.ARRAY_FILE,  # [CUSTOM] 文件数组输出
     ]
 )
+# [/CUSTOM]
 
 
 def _validate_type(segment_type: SegmentType) -> SegmentType:

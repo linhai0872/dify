@@ -1,15 +1,25 @@
+# [CUSTOM] 文件处理相关导入
+import base64
+from pathlib import Path
+# [/CUSTOM]
+
 from collections.abc import Mapping, Sequence
 from decimal import Decimal
 from textwrap import dedent
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
+from configs import dify_config  # [CUSTOM]
+from core.file.enums import FileTransferMethod  # [CUSTOM]
+from core.file.models import File  # [CUSTOM]
+from factories import file_factory  # [CUSTOM]
+from core.tools.tool_file_manager import ToolFileManager  # [CUSTOM]
 from dify_graph.entities.graph_config import NodeConfigDict
 from dify_graph.enums import BuiltinNodeTypes, WorkflowNodeExecutionStatus
 from dify_graph.node_events import NodeRunResult
 from dify_graph.nodes.base.node import Node
 from dify_graph.nodes.code.entities import CodeLanguage, CodeNodeData
 from dify_graph.nodes.code.limits import CodeNodeLimits
-from dify_graph.variables.segments import ArrayFileSegment
+from dify_graph.variables.segments import ArrayFileSegment, FileSegment  # [CUSTOM] 添加 FileSegment
 from dify_graph.variables.types import SegmentType
 
 from .exc import (
@@ -202,6 +212,65 @@ class CodeNode(Node[CodeNodeData]):
                 )
 
         return value
+
+    # [CUSTOM] 从代码执行结果创建文件对象
+    def _create_file_from_info(self, file_info: dict) -> File:
+        """
+        Create File object from file info dict returned by code execution.
+
+        Supports two formats:
+        1. base64: {"content_base64": "...", "mime_type": "...", "filename": "..."}
+        2. file_path: {"file_path": "/path/to/file", "mime_type": "...", "filename": "..."}
+
+        :param file_info: file information dictionary
+        :return: File object
+        """
+        # Extract file binary content from base64 or file path
+        if "content_base64" in file_info:
+            try:
+                file_binary = base64.b64decode(file_info["content_base64"])
+            except Exception as e:
+                raise OutputValidationError(f"Failed to decode base64 content: {e!s}")
+        elif "file_path" in file_info:
+            file_path = Path(file_info["file_path"])
+            if not file_path.exists():
+                raise OutputValidationError(f"File not found: {file_path}")
+            try:
+                file_binary = file_path.read_bytes()
+            except Exception as e:
+                raise OutputValidationError(f"Failed to read file: {e!s}")
+        else:
+            raise OutputValidationError("File info must contain 'content_base64' or 'file_path'")
+
+        # Validate file size against configured limit
+        file_size_mb = len(file_binary) / (1024 * 1024)
+        if file_size_mb > dify_config.CODE_MAX_FILE_SIZE:
+            raise OutputValidationError(
+                f"File size ({file_size_mb:.2f}MB) exceeds limit ({dify_config.CODE_MAX_FILE_SIZE}MB)"
+            )
+
+        # Create and store file using ToolFileManager
+        tool_file_manager = ToolFileManager()
+        tool_file = tool_file_manager.create_file_by_raw(
+            user_id=self.user_id,
+            tenant_id=self.tenant_id,
+            conversation_id=None,
+            file_binary=file_binary,
+            mimetype=file_info.get("mime_type", "application/octet-stream"),
+            filename=file_info.get("filename"),
+        )
+
+        # Build File object with tool file reference
+        mapping = {
+            "tool_file_id": tool_file.id,
+            "transfer_method": FileTransferMethod.TOOL_FILE.value,
+        }
+        return file_factory.build_from_mapping(
+            mapping=mapping,
+            tenant_id=self.tenant_id,
+        )
+
+    # [/CUSTOM]
 
     def _transform_result(
         self,
@@ -449,6 +518,41 @@ class CodeNode(Node[CodeNodeData]):
                             )
                         _ = self._check_boolean(value=inner_value, variable=f"{prefix}{dot}{output_name}[{i}]")
                     transformed_result[output_name] = value
+
+            # [CUSTOM] 文件类型处理
+            elif output_config.type == SegmentType.FILE:
+                # Handle single file output
+                file_info = result[output_name]
+                if file_info is None:
+                    transformed_result[output_name] = None
+                elif not isinstance(file_info, dict):
+                    raise OutputValidationError(
+                        f"Output {prefix}{dot}{output_name} must be a dict with file info"
+                    )
+                else:
+                    file = self._create_file_from_info(file_info)
+                    transformed_result[output_name] = FileSegment(value=file)
+
+            elif output_config.type == SegmentType.ARRAY_FILE:
+                # Handle file array output
+                if not isinstance(result[output_name], list):
+                    if result[output_name] is None:
+                        transformed_result[output_name] = None
+                    else:
+                        raise OutputValidationError(
+                            f"Output {prefix}{dot}{output_name} is not an array"
+                        )
+                else:
+                    files = []
+                    for i, file_info in enumerate(result[output_name]):
+                        if not isinstance(file_info, dict):
+                            raise OutputValidationError(
+                                f"Output {prefix}{dot}{output_name}[{i}] must be a dict with file info"
+                            )
+                        file = self._create_file_from_info(file_info)
+                        files.append(file)
+                    transformed_result[output_name] = ArrayFileSegment(value=files)
+            # [/CUSTOM]
 
             else:
                 raise OutputValidationError(f"Output type {output_config.type} is not supported.")

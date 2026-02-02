@@ -1,0 +1,4 @@
+libzbar0
+libjpeg-dev
+zlib1g-dev
+dpkg-dev

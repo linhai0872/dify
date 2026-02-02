@@ -1,0 +1,38 @@
+# [CUSTOM] Dify Sandbox 基础配置
+# 功能: 依赖管理 + 文件输入输出
+# 注意: syscall 白名单由 init-config.sh 根据架构自动追加
+# 文档: .custom/docs/development/README.md
+
+app:
+  port: 8194
+  debug: true
+  key: dify-sandbox
+
+max_workers: 4
+max_requests: 50
+worker_timeout: 15  # [CUSTOM] 扩展为 15s（支持复杂操作）
+
+python_path: /usr/local/bin/python3
+python_lib_path:
+  - /usr/local/lib/python3.10
+  - /usr/lib/python3.10
+  - /usr/lib/python3
+  - /usr/lib/x86_64-linux-gnu      # x86_64 支持
+  - /lib/x86_64-linux-gnu          # x86_64 支持
+  - /usr/lib/aarch64-linux-gnu     # [CUSTOM] ARM64 支持
+  - /lib/aarch64-linux-gnu         # [CUSTOM] ARM64 支持
+  - /etc/ld.so.cache               # [CUSTOM] 动态库缓存
+  - /etc/ssl/certs/ca-certificates.crt
+  - /etc/nsswitch.conf
+  - /etc/hosts
+  - /etc/resolv.conf
+
+enable_network: true
+
+proxy:
+  socks5: ''
+  http: ''
+  https: ''
+
+# allowed_syscalls 由 init-config.sh 根据架构自动追加
+# 参见: arch/syscalls.aarch64.yaml 或 arch/syscalls.x86_64.yaml

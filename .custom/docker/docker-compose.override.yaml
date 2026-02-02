@@ -1,0 +1,42 @@
+# [CUSTOM] Sandbox 增强配置
+# 功能: 依赖管理 + 文件输入输出 + 架构自适应
+# 文档: .custom/docs/features/sandbox-enhancement.md
+#
+# 使用方式:
+#   docker compose -f docker-compose.middleware.yaml \
+#       -f ../.custom/docker/docker-compose.override.yaml \
+#       --env-file middleware.env up -d
+
+services:
+  sandbox:
+    # 使用自定义镜像（包含系统依赖）
+    image: ${SANDBOX_IMAGE:-langgenius/dify-sandbox:0.2.12}
+
+    # [CUSTOM] 架构自适应初始化脚本
+    # 1. 检测 CPU 架构 (aarch64/x86_64)
+    # 2. 选择对应的 syscall 白名单
+    # 3. 合并配置到 config.yaml
+    # 4. 设置 /tmp 目录权限
+    # 5. 启动 sandbox
+    entrypoint: /bin/sh /custom-conf/init-config.sh
+
+    # [CUSTOM] 安全配置
+    # 开发/测试环境: seccomp:unconfined 快速迭代
+    # 生产环境: 移除此项，依赖 config.yaml 中的 syscall 白名单
+    security_opt:
+      - seccomp:unconfined
+
+    # 扩展环境变量
+    environment:
+      WORKER_TIMEOUT: ${SANDBOX_WORKER_TIMEOUT:-15}
+      ENABLE_NETWORK: ${SANDBOX_ENABLE_NETWORK:-true}
+
+    # [CUSTOM] 文件挂载
+    # 规范: 二开配置放 .custom/ 目录，通过挂载覆盖
+    volumes:
+      # 官方目录
+      - ./volumes/sandbox/dependencies:/dependencies
+      - ./volumes/sandbox/conf:/conf
+      # 二开目录 (覆盖式挂载)
+      - ../.custom/docker/sandbox/conf:/custom-conf:ro  # 只读挂载二开配置
+      - ./volumes/sandbox/files:/sandbox_files          # 文件输出目录
