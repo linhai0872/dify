@@ -331,6 +331,120 @@ The text generation application offers non-session support and is ideal for tran
       "session_id": "abc-123",
       "created_at": "2024-01-01T00:00:00Z",
       "updated_at": "2024-01-01T00:00:00Z"
+  url='/custom/remote-files/<url>'
+  method='GET'
+  title='Get Remote File Info'
+  name='#custom-remote-file-info'
+/>
+<Row>
+  <Col>
+    Get metadata of a remote file, including file type and size. This endpoint accesses remote URLs through SSRF protection proxy.
+
+    <i>This is a custom extension API.</i>
+
+    ### Path Parameters
+    - `url` (string) Required
+      The URL of the remote file (URL encoded).
+
+    ### Response
+    - `file_type` (string) File MIME type
+    - `file_length` (int) File size in bytes, -1 if unavailable
+
+    ### Errors
+    - 400, `remote_file_upload_error`, Failed to fetch remote file
+    - 401, Invalid API Token
+    - 500, Internal server error
+
+  </Col>
+  <Col sticky>
+
+    <CodeGroup
+      title="Request"
+      tag="GET"
+      label="/custom/remote-files/<url>"
+      targetCode={`curl -X GET '${props.appDetail.api_base_url}/custom/remote-files/https%3A%2F%2Fexample.com%2Ffile.pdf' \\
+--header 'Authorization: Bearer {api_key}'`}
+    />
+
+    <CodeGroup title="Response">
+    ```json {{ title: 'Response' }}
+    {
+      "file_type": "application/pdf",
+      "file_length": 1024000
+    }
+    ```
+    </CodeGroup>
+  </Col>
+</Row>
+
+---
+
+<Heading
+  url='/custom/remote-files/upload'
+  method='POST'
+  title='Upload Remote File'
+  name='#custom-remote-file-upload'
+/>
+<Row>
+  <Col>
+    Download a file from a remote URL and upload it to Dify storage. This endpoint downloads files through SSRF protection proxy.
+
+    <i>This is a custom extension API.</i>
+
+    ### Request Body
+    <Properties>
+      <Property name='url' type='string' key='url'>
+        The URL of the remote file (required).
+      </Property>
+      <Property name='user' type='string' key='user'>
+        User identifier, used to define the identity of the end-user, must be consistent with the user passed in the send message API.
+      </Property>
+    </Properties>
+
+    ### Response
+    After successful upload, the server returns the file ID and signed URL.
+    - `id` (uuid) File ID
+    - `name` (string) File name
+    - `size` (int) File size in bytes
+    - `extension` (string) File extension
+    - `url` (string) Signed access URL
+    - `mime_type` (string) File MIME type
+    - `created_by` (uuid) Uploader ID
+    - `created_at` (timestamp) Upload timestamp
+
+    ### Errors
+    - 400, `remote_file_upload_error`, Failed to fetch remote file
+    - 401, Invalid API Token
+    - 413, `file_too_large`, File too large
+    - 415, `unsupported_file_type`, Unsupported file type
+
+  </Col>
+  <Col sticky>
+
+    <CodeGroup
+      title="Request"
+      tag="POST"
+      label="/custom/remote-files/upload"
+      targetCode={`curl -X POST '${props.appDetail.api_base_url}/custom/remote-files/upload' \\
+--header 'Authorization: Bearer {api_key}' \\
+--header 'Content-Type: application/json' \\
+--data-raw '{
+    "url": "https://example.com/file.pdf",
+    "user": "abc-123"
+}'`}
+    />
+
+    <CodeGroup title="Response">
+    ```json {{ title: 'Response' }}
+    {
+      "id": "72fa9618-8f89-4a37-9b33-7e1178a24a67",
+      "name": "file.pdf",
+      "size": 1024000,
+      "extension": ".pdf",
+      "url": "https://dify.example.com/files/xxx/file-preview?sign=...",
+      "mime_type": "application/pdf",
+      "created_by": "user-123",
+      "created_at": 1706500000
     }
     ```
     </CodeGroup>
