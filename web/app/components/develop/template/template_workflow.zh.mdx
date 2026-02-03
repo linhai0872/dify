@@ -728,6 +728,129 @@ Workflow 应用无会话支持，适合用于翻译/文章写作/总结 AI 等�
 ---
 
 <Heading
+  url='/custom/remote-files/<url>'
+  method='GET'
+  title='获取远程文件信息'
+  name='#custom-remote-file-info'
+/>
+<Row>
+  <Col>
+    获取远程文件的元信息，包括文件类型和大小。此接口通过 SSRF 防护代理访问远程 URL。
+
+    <i>此为二开功能接口。</i>
+
+    ### 路径参数
+    - `url` (string) 必需
+      远程文件的 URL（需要 URL 编码）。
+
+    ### Response
+    - `file_type` (string) 文件 MIME 类型
+    - `file_length` (int) 文件大小（byte），如果无法获取则为 -1
+
+    ### Errors
+    - 400，`remote_file_upload_error`，无法获取远程文件
+    - 401，无效的 API Token
+    - 500，服务内部异常
+
+  </Col>
+  <Col sticky>
+
+    <CodeGroup
+      title="Request"
+      tag="GET"
+      label="/custom/remote-files/<url>"
+      targetCode={`curl -X GET '${props.appDetail.api_base_url}/custom/remote-files/https%3A%2F%2Fexample.com%2Ffile.pdf' \\
+--header 'Authorization: Bearer {api_key}'`}
+    />
+
+    <CodeGroup title="Response">
+    ```json {{ title: 'Response' }}
+    {
+      "file_type": "application/pdf",
+      "file_length": 1024000
+    }
+    ```
+    </CodeGroup>
+  </Col>
+</Row>
+
+---
+
+<Heading
+  url='/custom/remote-files/upload'
+  method='POST'
+  title='上传远程文件'
+  name='#custom-remote-file-upload'
+/>
+<Row>
+  <Col>
+    从远程 URL 下载文件并上传到 Dify 存储。此接口通过 SSRF 防护代理下载文件。
+
+    <i>此为二开功能接口。</i>
+
+    ### Request Body
+    <Properties>
+      <Property name='url' type='string' key='url'>
+        远程文件的 URL（必填）。
+      </Property>
+      <Property name='user' type='string' key='user'>
+        用户标识，用于定义终端用户的身份，必须和发送消息接口传入 user 保持一致。
+      </Property>
+    </Properties>
+
+    ### Response
+    成功上传后，服务器会返回文件的 ID 和签名 URL。
+    - `id` (uuid) 文件 ID
+    - `name` (string) 文件名
+    - `size` (int) 文件大小（byte）
+    - `extension` (string) 文件后缀
+    - `url` (string) 签名访问 URL
+    - `mime_type` (string) 文件 MIME 类型
+    - `created_by` (uuid) 上传人 ID
+    - `created_at` (timestamp) 上传时间
+
+    ### Errors
+    - 400，`remote_file_upload_error`，无法获取远程文件
+    - 401，无效的 API Token
+    - 413，`file_too_large`，文件太大
+    - 415，`unsupported_file_type`，不支持的文件类型
+
+  </Col>
+  <Col sticky>
+
+    <CodeGroup
+      title="Request"
+      tag="POST"
+      label="/custom/remote-files/upload"
+      targetCode={`curl -X POST '${props.appDetail.api_base_url}/custom/remote-files/upload' \\
+--header 'Authorization: Bearer {api_key}' \\
+--header 'Content-Type: application/json' \\
+--data-raw '{
+    "url": "https://example.com/file.pdf",
+    "user": "abc-123"
+}'`}
+    />
+
+    <CodeGroup title="Response">
+    ```json {{ title: 'Response' }}
+    {
+      "id": "72fa9618-8f89-4a37-9b33-7e1178a24a67",
+      "name": "file.pdf",
+      "size": 1024000,
+      "extension": ".pdf",
+      "url": "https://dify.example.com/files/xxx/file-preview?sign=...",
+      "mime_type": "application/pdf",
+      "created_by": "user-123",
+      "created_at": 1706500000
+    }
+    ```
+    </CodeGroup>
+  </Col>
+</Row>
+
+---
+
+<Heading
   url='/workflows/logs'
   method='GET'
   title='获取 Workflow 日志'
