@@ -208,6 +208,129 @@ API 开发完成后的安全检查见 [workflow/code-review-checklist.md](../dev
 
 管理后台功能的二开接口。
 
+### 追踪搜索
+
+| 端点 | 方法 | 功能 | 状态 |
+|------|------|------|------|
+| `/console/api/custom/apps/<app_id>/trace/<trace_id>` | GET | 按追踪 ID 查询执行详情 | ✅ 已实现 |
+
+#### 按追踪 ID 查询执行详情
+
+**功能描述**：通过外部追踪 ID 查询应用执行的完整详情，包括工作流节点执行或 Agent 思考链。
+
+**端点**：`GET /console/api/custom/apps/<app_id>/trace/<trace_id>`
+
+**认证**：`Session`
+
+##### 请求参数
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `app_id` | `string` (path) | 是 | 应用 ID |
+| `trace_id` | `string` (path) | 是 | 外部追踪 ID（来自 X-Trace-Id 或 inputs.dify_trace_id） |
+
+##### 响应
+
+**成功响应 - Workflow 应用** (Status: 200)
+
+```json
+{
+  "type": "workflow",
+  "workflow_run": {
+    "id": "run_xxx",
+    "status": "succeeded",
+    "inputs": {"key": "value"},
+    "outputs": {"result": "..."},
+    "elapsed_time": 3.5,
+    "total_tokens": 1234,
+    "error": null,
+    "created_at": "2026-02-03T10:00:00Z",
+    "finished_at": "2026-02-03T10:00:03Z"
+  },
+  "node_executions": [
+    {
+      "node_id": "start",
+      "node_type": "start",
+      "title": "开始",
+      "status": "succeeded",
+      "inputs": {},
+      "outputs": {},
+      "elapsed_time": 0.1,
+      "error": null
+    }
+  ]
+}
+```
+
+**成功响应 - Chat/Agent 应用** (Status: 200)
+
+```json
+{
+  "type": "chat",
+  "message": {
+    "id": "msg_xxx",
+    "conversation_id": "conv_xxx",
+    "query": "用户问题",
+    "answer": "AI 回答",
+    "inputs": {},
+    "status": "normal",
+    "created_at": "2026-02-03T10:00:00Z"
+  },
+  "agent_thoughts": [
+    {
+      "position": 1,
+      "thought": "思考内容",
+      "tool": "tool_name",
+      "tool_input": {},
+      "observation": "工具返回"
+    }
+  ],
+  "workflow_run": null,
+  "node_executions": []
+}
+```
+
+**成功响应 - Chatflow 应用** (Status: 200)
+
+```json
+{
+  "type": "chatflow",
+  "message": {
+    "id": "msg_xxx",
+    "conversation_id": "conv_xxx",
+    "query": "用户问题",
+    "answer": "AI 回答",
+    "workflow_run_id": "run_xxx"
+  },
+  "agent_thoughts": [],
+  "workflow_run": {
+    "id": "run_xxx",
+    "status": "succeeded",
+    "inputs": {},
+    "outputs": {},
+    "elapsed_time": 2.1
+  },
+  "node_executions": [...]
+}
+```
+
+**错误响应**
+
+| Status | Code | 说明 |
+|--------|------|------|
+| 401 | `unauthorized` | 未登录 |
+| 403 | `forbidden` | 无权限访问该应用 |
+| 404 | `not_found` | 未找到匹配的执行记录 |
+
+##### 代码示例
+
+```bash
+curl -X GET '{DIFY_URL}/console/api/custom/apps/{app_id}/trace/order-12345' \
+  -H 'Cookie: session=...'
+```
+
+---
+
 ### 用户管理
 
 | 端点 | 方法 | 功能 | 状态 |
@@ -332,6 +455,52 @@ curl -X POST '{DIFY_URL}/v1/custom/remote-files/upload' \
     "url": "https://example.com/file.pdf",
     "user": "abc-123"
   }'
+```
+
+---
+
+### 追踪搜索
+
+| 端点 | 方法 | 功能 | 状态 |
+|------|------|------|------|
+| `/v1/custom/apps/<app_id>/trace/<trace_id>` | GET | 按追踪 ID 查询执行详情 | ✅ 已实现 |
+
+#### 按追踪 ID 查询执行详情 (Service API)
+
+**功能描述**：通过外部追踪 ID 查询应用执行的完整详情。支持通过 `X-Trace-Id` Header、`trace_id` 参数或 `inputs.dify_trace_id` 传入的追踪 ID。
+
+**端点**：`GET /v1/custom/apps/<app_id>/trace/<trace_id>`
+
+**认证**：`API Key`
+
+##### 请求参数
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `app_id` | `string` (path) | 是 | 应用 ID |
+| `trace_id` | `string` (path) | 是 | 外部追踪 ID |
+
+##### 响应
+
+响应结构与 Console API 一致，参见上方 [按追踪 ID 查询执行详情](#按追踪-id-查询执行详情)。
+
+##### 代码示例
+
+```bash
+# 1. 调用工作流时传入 trace_id
+curl -X POST '{DIFY_URL}/v1/workflows/run' \
+  -H 'Authorization: Bearer {api_key}' \
+  -H 'X-Trace-Id: order-12345' \
+  -H 'Content-Type: application/json' \
+  --data-raw '{
+    "inputs": {"customer_id": "C001"},
+    "response_mode": "blocking",
+    "user": "user-123"
+  }'
+
+# 2. 按 trace_id 查询完整执行详情
+curl -X GET '{DIFY_URL}/v1/custom/apps/{app_id}/trace/order-12345' \
+  -H 'Authorization: Bearer {api_key}'
 ```
 
 ---

@@ -698,6 +698,7 @@ class WorkflowRunDict(TypedDict):
     created_at: datetime
     finished_at: datetime | None
     exceptions_count: int
+    external_trace_id: str | None  # [CUSTOM]
 
 
 class WorkflowRun(Base):
@@ -736,6 +737,7 @@ class WorkflowRun(Base):
     - created_by (uuid) Runner ID
     - created_at (timestamp) Run time
     - finished_at (timestamp) End time
+    - external_trace_id (string) `optional` External trace ID [CUSTOM]
     """
 
     __tablename__ = "workflow_runs"
@@ -743,6 +745,8 @@ class WorkflowRun(Base):
         sa.PrimaryKeyConstraint("id", name="workflow_run_pkey"),
         sa.Index("workflow_run_triggerd_from_idx", "tenant_id", "app_id", "triggered_from"),
         sa.Index("workflow_run_created_at_id_idx", "created_at", "id"),
+        # [CUSTOM] Index for external trace ID lookup
+        sa.Index("workflow_run_external_trace_id_idx", "tenant_id", "app_id", "external_trace_id"),
     )
 
     id: Mapped[str] = mapped_column(StringUUID, default=lambda: str(uuid4()))
@@ -769,6 +773,8 @@ class WorkflowRun(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.current_timestamp())
     finished_at: Mapped[datetime | None] = mapped_column(DateTime)
     exceptions_count: Mapped[int] = mapped_column(sa.Integer, server_default=sa.text("0"), nullable=True)
+    # [CUSTOM] External trace ID for tracking
+    external_trace_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
     pause: Mapped[Optional["WorkflowPause"]] = orm.relationship(
         lambda: WorkflowPause,
@@ -841,6 +847,7 @@ class WorkflowRun(Base):
             created_at=self.created_at,
             finished_at=self.finished_at,
             exceptions_count=self.exceptions_count,
+            external_trace_id=self.external_trace_id,  # [CUSTOM]
         )
 
     @classmethod
@@ -866,6 +873,7 @@ class WorkflowRun(Base):
             created_at=data.get("created_at"),
             finished_at=data.get("finished_at"),
             exceptions_count=data.get("exceptions_count"),
+            external_trace_id=data.get("external_trace_id"),  # [CUSTOM]
         )
 
 

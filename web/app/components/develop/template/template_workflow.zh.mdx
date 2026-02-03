@@ -1410,6 +1410,105 @@ Workflow 应用无会话支持，适合用于翻译/文章写作/总结 AI 等�
 ---
 
 <Heading
+  url='/custom/apps/{app_id}/trace/{trace_id}'
+  method='GET'
+  title='按追踪 ID 查询执行详情'
+  name='#custom-trace-search'
+/>
+<Row>
+  <Col>
+    通过外部追踪 ID 查询应用执行的完整详情，包括工作流节点执行信息。
+
+    <i>此为二开功能接口。</i>
+
+    追踪 ID 可通过以下方式传入：
+    - 请求头 `X-Trace-Id`
+    - 请求参数 `trace_id`
+    - 请求体 `inputs.dify_trace_id`
+
+    ### 路径参数
+    - `app_id` (uuid) 必需 - 应用 ID
+    - `trace_id` (string) 必需 - 外部追踪 ID
+
+    ### Response
+    - `type` (string) 应用类型：workflow
+    - `workflow_run` (object) 工作流运行详情
+      - `id` (uuid) 运行 ID
+      - `status` (string) 执行状态
+      - `inputs` (object) 输入参数
+      - `outputs` (object) 输出结果
+      - `elapsed_time` (float) 耗时（秒）
+      - `total_tokens` (int) 总 token 数
+      - `error` (string) 错误信息
+      - `created_at` (string) 创建时间
+      - `finished_at` (string) 完成时间
+    - `node_executions` (array) 节点执行列表
+
+    ### Errors
+    - 401，无效的 API Token
+    - 404，未找到匹配的执行记录
+
+  </Col>
+  <Col sticky>
+
+    <CodeGroup
+      title="Request"
+      tag="GET"
+      label="/custom/apps/{app_id}/trace/{trace_id}"
+      targetCode={`# 1. 调用工作流时传入 trace_id
+curl -X POST '${props.appDetail.api_base_url}/workflows/run' \\
+--header 'Authorization: Bearer {api_key}' \\
+--header 'X-Trace-Id: order-12345' \\
+--header 'Content-Type: application/json' \\
+--data-raw '{
+    "inputs": {"customer_id": "C001"},
+    "response_mode": "blocking",
+    "user": "user-123"
+}'
+
+# 2. 按 trace_id 查询执行详情
+curl -X GET '${props.appDetail.api_base_url}/custom/apps/${props.appDetail.id}/trace/order-12345' \\
+--header 'Authorization: Bearer {api_key}'`}
+    />
+
+    <CodeGroup title="Response">
+    ```json {{ title: 'Response' }}
+    {
+      "type": "workflow",
+      "workflow_run": {
+        "id": "run_xxx",
+        "status": "succeeded",
+        "inputs": {"customer_id": "C001"},
+        "outputs": {"result": "..."},
+        "elapsed_time": 3.5,
+        "total_tokens": 1234,
+        "error": null,
+        "created_at": "2026-02-03T10:00:00Z",
+        "finished_at": "2026-02-03T10:00:03Z",
+        "external_trace_id": "order-12345"
+      },
+      "node_executions": [
+        {
+          "node_id": "start",
+          "node_type": "start",
+          "title": "开始",
+          "status": "succeeded",
+          "inputs": {},
+          "outputs": {},
+          "elapsed_time": 0.1
+        }
+      ],
+      "message": null,
+      "agent_thoughts": []
+    }
+    ```
+    </CodeGroup>
+  </Col>
+</Row>
+
+---
+
+<Heading
   url='/workflows/logs'
   method='GET'
   title='获取 Workflow 日志'
@@ -1424,6 +1523,9 @@ Workflow 应用无会话支持，适合用于翻译/文章写作/总结 AI 等�
     <Properties>
       <Property name='keyword' type='string' key='keyword'>
         关键字
+      </Property>
+      <Property name='keyword_scope' type='string' key='keyword_scope'>
+        [二开] 搜索范围：all (默认), inputs, outputs, session_id, run_id, trace_id
       </Property>
       <Property name='status' type='string' key='status'>
         执行状态 succeeded/failed/stopped
