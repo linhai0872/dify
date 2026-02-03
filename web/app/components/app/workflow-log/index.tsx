@@ -13,7 +13,8 @@ import EmptyElement from '@/app/components/app/log/empty-element'
 import Loading from '@/app/components/base/loading'
 import Pagination from '@/app/components/base/pagination'
 import { APP_PAGE_LIMIT } from '@/config'
-import { useAppContext } from '@/context/app-context'
+// [CUSTOM] Use unified log timezone hook
+import useCustomLogTimestamp from '@/hooks/use-custom-log-timestamp'
 import { useWorkflowLogs } from '@/service/use-log'
 import Filter, { TIME_PERIOD_MAPPING } from './filter'
 import List from './list'
@@ -33,7 +34,8 @@ export type QueryParam = {
 
 const Logs: FC<ILogsProps> = ({ appDetail }) => {
   const { t } = useTranslation()
-  const { userProfile: { timezone } } = useAppContext()
+  // [CUSTOM] Use unified log timezone for time range queries
+  const { effectiveTimezone } = useCustomLogTimestamp()
   const [queryParams, setQueryParams] = useState<QueryParam>({ status: 'all', period: '2' })
   const [currPage, setCurrPage] = React.useState<number>(0)
   const debouncedQueryParams = useDebounce(queryParams, { wait: 500 })
@@ -45,12 +47,14 @@ const Logs: FC<ILogsProps> = ({ appDetail }) => {
     limit,
     ...(debouncedQueryParams.status !== 'all' ? { status: debouncedQueryParams.status } : {}),
     ...(debouncedQueryParams.keyword ? { keyword: debouncedQueryParams.keyword } : {}),
+    // [CUSTOM] Use unified log timezone for time range queries
     ...((debouncedQueryParams.period !== '9')
       ? {
-          created_at__after: dayjs().subtract(TIME_PERIOD_MAPPING[debouncedQueryParams.period].value, 'day').startOf('day').tz(timezone).format('YYYY-MM-DDTHH:mm:ssZ'),
-          created_at__before: dayjs().endOf('day').tz(timezone).format('YYYY-MM-DDTHH:mm:ssZ'),
+          created_at__after: dayjs().subtract(TIME_PERIOD_MAPPING[debouncedQueryParams.period].value, 'day').startOf('day').tz(effectiveTimezone).format('YYYY-MM-DDTHH:mm:ssZ'),
+          created_at__before: dayjs().endOf('day').tz(effectiveTimezone).format('YYYY-MM-DDTHH:mm:ssZ'),
         }
       : {}),
+    // [/CUSTOM]
     ...omit(debouncedQueryParams, ['period', 'status']),
   }
 
