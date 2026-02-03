@@ -3,15 +3,17 @@ Main error handler that coordinates error strategies.
 """
 
 import logging
+import random
 import time
 from typing import TYPE_CHECKING, final
 
 from core.workflow.enums import (
-    ErrorStrategy as ErrorStrategyEnum,
-)
-from core.workflow.enums import (
+    BackoffStrategy,
     WorkflowNodeExecutionMetadataKey,
     WorkflowNodeExecutionStatus,
+)
+from core.workflow.enums import (
+    ErrorStrategy as ErrorStrategyEnum,
 )
 from core.workflow.graph import Graph
 from core.workflow.graph_events import (
@@ -21,11 +23,51 @@ from core.workflow.graph_events import (
     NodeRunRetryEvent,
 )
 from core.workflow.node_events import NodeRunResult
+from core.workflow.nodes.base.entities import RetryConfig
 
 if TYPE_CHECKING:
     from .domain import GraphExecution
 
 logger = logging.getLogger(__name__)
+
+# [CUSTOM] 二开: 抖动下限保护 (100ms)
+MIN_JITTER_FLOOR_SECONDS = 0.1
+# [/CUSTOM]
+
+
+# [CUSTOM] 二开: 指数退避等待时间计算
+def calculate_wait_time(retry_count: int, config: RetryConfig) -> float:
+    """
+    Calculate wait time before retry based on backoff strategy.
+
+    Args:
+        retry_count: Current retry attempt (0-indexed, so first retry is 0)
+        config: Retry configuration with backoff settings
+
+    Returns:
+        Wait time in seconds
+    """
+    if config.backoff_strategy == BackoffStrategy.FIXED:
+        # Fixed interval: always wait the same amount
+        return config.retry_interval_seconds
+
+    # Exponential backoff: wait = base * multiplier^retry_count
+    exponential_wait_ms = config.retry_interval * (config.backoff_multiplier**retry_count)
+
+    # Cap at max backoff interval
+    capped_wait_ms = min(exponential_wait_ms, config.max_backoff_interval)
+
+    # Full Jitter: random value between 0 and capped_wait
+    jittered_wait_ms = random.uniform(0, capped_wait_ms)  # noqa: S311
+
+    # Convert to seconds
+    wait_seconds = jittered_wait_ms / 1000
+
+    # Apply minimum floor to prevent near-zero waits
+    return max(wait_seconds, MIN_JITTER_FLOOR_SECONDS)
+
+
+# [/CUSTOM]
 
 
 @final
@@ -121,8 +163,11 @@ class ErrorHandler:
         if not node.retry or retry_count >= node.retry_config.max_retries:
             return None
 
-        # Wait for retry interval
-        time.sleep(node.retry_config.retry_interval_seconds)
+        # [CUSTOM] 二开: 使用指数退避计算等待时间
+        # Wait for calculated retry interval (supports fixed and exponential backoff)
+        wait_time = calculate_wait_time(retry_count, node.retry_config)
+        time.sleep(wait_time)
+        # [/CUSTOM]
 
         # Create retry event
         return NodeRunRetryEvent(

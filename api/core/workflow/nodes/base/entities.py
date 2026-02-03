@@ -9,7 +9,7 @@ from typing import Any, Union
 
 from pydantic import BaseModel, field_validator, model_validator
 
-from core.workflow.enums import ErrorStrategy
+from core.workflow.enums import BackoffStrategy, ErrorStrategy
 
 from .exc import DefaultValueTypeError
 
@@ -20,12 +20,24 @@ class RetryConfig(BaseModel):
     """node retry config"""
 
     max_retries: int = 0  # max retry times
-    retry_interval: int = 0  # retry interval in milliseconds
+    retry_interval: int = 0  # retry interval in milliseconds (base interval for exponential backoff)
     retry_enabled: bool = False  # whether retry is enabled
+
+    # [CUSTOM] 二开: 指数退避重试配置
+    backoff_strategy: BackoffStrategy = BackoffStrategy.FIXED  # backoff strategy
+    backoff_multiplier: float = 2.0  # exponential base for backoff calculation
+    max_backoff_interval: int = 60000  # maximum backoff interval in milliseconds (default 60s)
+    # [/CUSTOM]
 
     @property
     def retry_interval_seconds(self) -> float:
         return self.retry_interval / 1000
+
+    # [CUSTOM] 二开: 最大退避时间（秒）
+    @property
+    def max_backoff_interval_seconds(self) -> float:
+        return self.max_backoff_interval / 1000
+    # [/CUSTOM]
 
 
 class VariableSelector(BaseModel):

@@ -385,6 +385,13 @@ class AgentNode(Node[AgentNodeData]):
 
         return result
 
+    # [CUSTOM] 二开: Agent 节点支持重试
+    @property
+    def retry(self) -> bool:
+        return self.node_data.retry_config.retry_enabled
+
+    # [/CUSTOM]
+
     @property
     def agent_strategy_icon(self) -> str | None:
         """

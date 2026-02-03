@@ -100,6 +100,15 @@ class ErrorStrategy(StrEnum):
     DEFAULT_VALUE = "default-value"
 
 
+# [CUSTOM] 二开: 指数退避重试策略
+class BackoffStrategy(StrEnum):
+    """Retry backoff strategy for node execution."""
+
+    FIXED = "fixed"  # Fixed interval between retries (default, current behavior)
+    EXPONENTIAL = "exponential"  # Exponential backoff with jitter
+# [/CUSTOM]
+
+
 class FailBranchSourceHandle(StrEnum):
     FAILED = "fail-branch"
     SUCCESS = "success-branch"
