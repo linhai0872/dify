@@ -21,6 +21,7 @@ from .app import (
     audio,
     completion,
     conversation,
+    custom_remote_file,  # [CUSTOM] 二开: 远程文件操作接口
     file,
     file_preview,
     human_input_form,
@@ -46,6 +47,7 @@ __all__ = [
     "audio",
     "completion",
     "conversation",
+    "custom_remote_file",  # [CUSTOM] 二开: 远程文件操作接口
     "dataset",
     "document",
     "end_user",
