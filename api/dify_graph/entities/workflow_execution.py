@@ -40,6 +40,8 @@ class WorkflowExecution(BaseModel):
 
     started_at: datetime = Field(...)
     finished_at: datetime | None = None
+    # [CUSTOM] External trace ID for tracking
+    external_trace_id: str | None = None
 
     @property
     def elapsed_time(self) -> float:
@@ -61,6 +63,7 @@ class WorkflowExecution(BaseModel):
         graph: Mapping[str, Any],
         inputs: Mapping[str, Any],
         started_at: datetime,
+        external_trace_id: str | None = None,  # [CUSTOM]
     ) -> WorkflowExecution:
         return WorkflowExecution(
             id_=id_,
@@ -71,4 +74,5 @@ class WorkflowExecution(BaseModel):
             inputs=inputs,
             status=WorkflowExecutionStatus.RUNNING,
             started_at=started_at,
+            external_trace_id=external_trace_id,  # [CUSTOM]
         )

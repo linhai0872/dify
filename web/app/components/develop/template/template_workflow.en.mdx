@@ -920,6 +920,105 @@ Workflow applications offers non-session support and is ideal for translation, a
 ---
 
 <Heading
+  url='/custom/apps/{app_id}/trace/{trace_id}'
+  method='GET'
+  title='Get Execution by Trace ID'
+  name='#custom-trace-search'
+/>
+<Row>
+  <Col>
+    Get complete execution details by external trace ID, including workflow node executions.
+
+    <i>This is a custom extension API.</i>
+
+    The trace ID can be provided via:
+    - Request header `X-Trace-Id`
+    - Query parameter `trace_id`
+    - Request body `inputs.dify_trace_id`
+
+    ### Path Parameters
+    - `app_id` (uuid) Required - Application ID
+    - `trace_id` (string) Required - External trace ID
+
+    ### Response
+    - `type` (string) Application type: workflow
+    - `workflow_run` (object) Workflow run details
+      - `id` (uuid) Run ID
+      - `status` (string) Execution status
+      - `inputs` (object) Input parameters
+      - `outputs` (object) Output results
+      - `elapsed_time` (float) Elapsed time in seconds
+      - `total_tokens` (int) Total tokens used
+      - `error` (string) Error message
+      - `created_at` (string) Created timestamp
+      - `finished_at` (string) Finished timestamp
+    - `node_executions` (array) Node execution list
+
+    ### Errors
+    - 401, Invalid API Token
+    - 404, No execution found for trace ID
+
+  </Col>
+  <Col sticky>
+
+    <CodeGroup
+      title="Request"
+      tag="GET"
+      label="/custom/apps/{app_id}/trace/{trace_id}"
+      targetCode={`# 1. Call workflow with trace_id
+curl -X POST '${props.appDetail.api_base_url}/workflows/run' \\
+--header 'Authorization: Bearer {api_key}' \\
+--header 'X-Trace-Id: order-12345' \\
+--header 'Content-Type: application/json' \\
+--data-raw '{
+    "inputs": {"customer_id": "C001"},
+    "response_mode": "blocking",
+    "user": "user-123"
+}'
+
+# 2. Query execution by trace_id
+curl -X GET '${props.appDetail.api_base_url}/custom/apps/${props.appDetail.id}/trace/order-12345' \\
+--header 'Authorization: Bearer {api_key}'`}
+    />
+
+    <CodeGroup title="Response">
+    ```json {{ title: 'Response' }}
+    {
+      "type": "workflow",
+      "workflow_run": {
+        "id": "run_xxx",
+        "status": "succeeded",
+        "inputs": {"customer_id": "C001"},
+        "outputs": {"result": "..."},
+        "elapsed_time": 3.5,
+        "total_tokens": 1234,
+        "error": null,
+        "created_at": "2026-02-03T10:00:00Z",
+        "finished_at": "2026-02-03T10:00:03Z",
+        "external_trace_id": "order-12345"
+      },
+      "node_executions": [
+        {
+          "node_id": "start",
+          "node_type": "start",
+          "title": "Start",
+          "status": "succeeded",
+          "inputs": {},
+          "outputs": {},
+          "elapsed_time": 0.1
+        }
+      ],
+      "message": null,
+      "agent_thoughts": []
+    }
+    ```
+    </CodeGroup>
+  </Col>
+</Row>
+
+---
+
+<Heading
   url='/workflows/logs'
   method='GET'
   title='Get Workflow Logs'
@@ -934,6 +1033,9 @@ Workflow applications offers non-session support and is ideal for translation, a
     <Properties>
       <Property name='keyword' type='string' key='keyword'>
         Keyword to search
+      </Property>
+      <Property name='keyword_scope' type='string' key='keyword_scope'>
+        [Custom] Search scope: all (default), inputs, outputs, session_id, run_id, trace_id
       </Property>
       <Property name='status' type='string' key='status'>
         succeeded/failed/stopped

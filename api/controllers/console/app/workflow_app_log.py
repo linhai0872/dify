@@ -25,6 +25,12 @@ DEFAULT_REF_TEMPLATE_SWAGGER_2_0 = "#/definitions/{model}"
 
 class WorkflowAppLogQuery(BaseModel):
     keyword: str | None = Field(default=None, description="Search keyword for filtering logs")
+    # [CUSTOM] Add keyword_scope parameter
+    keyword_scope: str | None = Field(
+        default=None,
+        description="Search scope: all (default), inputs, outputs, session_id, run_id, trace_id",
+    )
+    # [/CUSTOM]
     status: WorkflowExecutionStatus | None = Field(
         default=None, description="Execution status filter (succeeded, failed, stopped, partial-succeeded)"
     )
@@ -92,6 +98,7 @@ class WorkflowAppLogApi(Resource):
                 session=session,
                 app_model=app_model,
                 keyword=args.keyword,
+                keyword_scope=args.keyword_scope,  # [CUSTOM]
                 status=args.status,
                 created_at_before=args.created_at__before,
                 created_at_after=args.created_at__after,

@@ -49,6 +49,85 @@ def get_external_trace_id(request: Any) -> str | None:
     return None
 
 
+# [CUSTOM] Constant for inputs trace ID field name
+DIFY_TRACE_ID_INPUT_KEY = "dify_trace_id"
+
+
+def get_trace_id_from_inputs(inputs: Mapping[str, Any] | None) -> str | None:
+    """
+    [CUSTOM] Extract trace_id from inputs dictionary.
+
+    Looks for the 'dify_trace_id' field in inputs.
+    This is useful for WebApp scenarios where X-Trace-Id header cannot be set.
+
+    Args:
+        inputs: The inputs dictionary from the request
+
+    Returns:
+        The trace_id if found and valid, None otherwise.
+    """
+    if not inputs:
+        return None
+
+    trace_id = inputs.get(DIFY_TRACE_ID_INPUT_KEY)
+    if isinstance(trace_id, str) and is_valid_trace_id(trace_id):
+        return trace_id
+    return None
+
+
+def get_external_trace_id_with_inputs(request: Any, inputs: Mapping[str, Any] | None = None) -> str | None:
+    """
+    [CUSTOM] Retrieve the trace_id from request or inputs.
+
+    Priority:
+    1. header ('X-Trace-Id')
+    2. parameters
+    3. JSON body
+    4. inputs.dify_trace_id (for WebApp scenarios)
+    5. Current OpenTelemetry context (if enabled)
+    6. OpenTelemetry traceparent header (if present and valid)
+
+    Args:
+        request: The Flask request object
+        inputs: Optional inputs dictionary (for WebApp scenarios)
+
+    Returns:
+        The trace_id if found and valid, None otherwise.
+    """
+    # First try standard sources
+    trace_id = request.headers.get("X-Trace-Id")
+
+    if not trace_id:
+        trace_id = request.args.get("trace_id")
+
+    if not trace_id and getattr(request, "is_json", False):
+        json_data = getattr(request, "json", None)
+        if json_data:
+            trace_id = json_data.get("trace_id")
+
+    # [CUSTOM] Try inputs.dify_trace_id
+    if not trace_id and inputs:
+        trace_id = get_trace_id_from_inputs(inputs)
+
+    # Also check inputs from JSON body
+    if not trace_id and getattr(request, "is_json", False):
+        json_data = getattr(request, "json", None)
+        if json_data and isinstance(json_data.get("inputs"), dict):
+            trace_id = get_trace_id_from_inputs(json_data["inputs"])
+
+    if not trace_id:
+        trace_id = get_trace_id_from_otel_context()
+
+    if not trace_id:
+        traceparent = request.headers.get("traceparent")
+        if traceparent:
+            trace_id = parse_traceparent_header(traceparent)
+
+    if isinstance(trace_id, str) and is_valid_trace_id(trace_id):
+        return trace_id
+    return None
+
+
 def extract_external_trace_id_from_args(args: Mapping[str, Any]):
     """
     Extract 'external_trace_id' from args.

@@ -129,6 +129,12 @@ class CompletionAppGenerator(MessageBasedAppGenerator):
             app_id=app_model.id, user_id=user.id if isinstance(user, Account) else user.session_id
         )
 
+        # [CUSTOM] Extract external_trace_id from args
+        from core.helper.trace_id_helper import extract_external_trace_id_from_args
+
+        extras = extract_external_trace_id_from_args(args)
+        # [/CUSTOM]
+
         # init application generate entity
         application_generate_entity = CompletionAppGenerateEntity(
             task_id=str(uuid.uuid4()),
@@ -143,7 +149,7 @@ class CompletionAppGenerator(MessageBasedAppGenerator):
             user_id=user.id,
             stream=streaming,
             invoke_from=invoke_from,
-            extras={},
+            extras=extras,  # [CUSTOM]
             trace_manager=trace_manager,
         )
 
