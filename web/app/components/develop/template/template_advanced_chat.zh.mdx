@@ -514,6 +514,101 @@ import { Row, Col, Properties, Property, Heading, SubProperty } from '../md.tsx'
 ---
 
 <Heading
+  url='/custom/apps/{app_id}/trace/{trace_id}'
+  method='GET'
+  title='按追踪 ID 查询执行详情'
+  name='#custom-trace-search'
+/>
+<Row>
+  <Col>
+    通过外部追踪 ID 查询应用执行的完整详情，包括消息内容、工作流节点执行和 Agent 思考链。
+
+    <i>此为二开功能接口。</i>
+
+    追踪 ID 可通过以下方式传入：
+    - 请求头 `X-Trace-Id`
+    - 请求参数 `trace_id`
+    - 请求体 `inputs.dify_trace_id`
+
+    ### 路径参数
+    - `app_id` (uuid) 必需 - 应用 ID
+    - `trace_id` (string) 必需 - 外部追踪 ID
+
+    ### Response
+    - `type` (string) 应用类型：chatflow
+    - `message` (object) 消息详情
+      - `id` (uuid) 消息 ID
+      - `conversation_id` (uuid) 会话 ID
+      - `query` (string) 用户问题
+      - `answer` (string) AI 回答
+      - `workflow_run_id` (uuid) 关联的工作流运行 ID
+    - `workflow_run` (object) 工作流运行详情
+    - `node_executions` (array) 节点执行列表
+
+    ### Errors
+    - 401，无效的 API Token
+    - 404，未找到匹配的执行记录
+
+  </Col>
+  <Col sticky>
+
+    <CodeGroup
+      title="Request"
+      tag="GET"
+      label="/custom/apps/{app_id}/trace/{trace_id}"
+      targetCode={`# 1. 发送消息时传入 trace_id
+curl -X POST '${props.appDetail.api_base_url}/chat-messages' \\
+--header 'Authorization: Bearer {api_key}' \\
+--header 'X-Trace-Id: order-12345' \\
+--header 'Content-Type: application/json' \\
+--data-raw '{
+    "inputs": {},
+    "query": "你好",
+    "response_mode": "blocking",
+    "user": "user-123"
+}'
+
+# 2. 按 trace_id 查询执行详情
+curl -X GET '${props.appDetail.api_base_url}/custom/apps/${props.appDetail.id}/trace/order-12345' \\
+--header 'Authorization: Bearer {api_key}'`}
+    />
+
+    <CodeGroup title="Response">
+    ```json {{ title: 'Response' }}
+    {
+      "type": "chatflow",
+      "message": {
+        "id": "msg_xxx",
+        "conversation_id": "conv_xxx",
+        "query": "你好",
+        "answer": "您好！有什么可以帮助您的吗？",
+        "workflow_run_id": "run_xxx"
+      },
+      "agent_thoughts": [],
+      "workflow_run": {
+        "id": "run_xxx",
+        "status": "succeeded",
+        "inputs": {},
+        "outputs": {},
+        "elapsed_time": 2.1
+      },
+      "node_executions": [
+        {
+          "node_id": "start",
+          "node_type": "start",
+          "title": "开始",
+          "status": "succeeded"
+        }
+      ]
+    }
+    ```
+    </CodeGroup>
+  </Col>
+</Row>
+
+---
+
+<Heading
   url='/files/:file_id/preview'
   method='GET'
   title='文件预览'

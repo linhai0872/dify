@@ -160,6 +160,8 @@ class WorkflowPersistenceLayer(GraphEngineLayer):
     # ------------------------------------------------------------------
     def _handle_graph_run_started(self) -> None:
         execution_id = self._get_execution_id()
+        # [CUSTOM] Get external_trace_id from application_generate_entity extras
+        external_trace_id = self._application_generate_entity.extras.get("external_trace_id")
         workflow_execution = WorkflowExecution.new(
             id_=execution_id,
             workflow_id=self._workflow_info.workflow_id,
@@ -168,6 +170,7 @@ class WorkflowPersistenceLayer(GraphEngineLayer):
             graph=self._workflow_info.graph_data,
             inputs=self._prepare_workflow_inputs(),
             started_at=naive_utc_now(),
+            external_trace_id=external_trace_id,  # [CUSTOM]
         )
 
         self._workflow_execution_repository.save(workflow_execution)

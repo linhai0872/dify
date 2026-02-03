@@ -486,6 +486,92 @@ Chat applications support session persistence, allowing previous chat history to
 ---
 
 <Heading
+  url='/custom/apps/{app_id}/trace/{trace_id}'
+  method='GET'
+  title='Get Execution by Trace ID'
+  name='#custom-trace-search'
+/>
+<Row>
+  <Col>
+    Get complete execution details by external trace ID, including message content and agent thoughts chain.
+
+    <i>This is a custom extension API.</i>
+
+    The trace ID can be provided via:
+    - Request header `X-Trace-Id`
+    - Query parameter `trace_id`
+    - Request body `inputs.dify_trace_id`
+
+    ### Path Parameters
+    - `app_id` (uuid) Required - Application ID
+    - `trace_id` (string) Required - External trace ID
+
+    ### Response
+    - `type` (string) Application type: chat / agent
+    - `message` (object) Message details
+      - `id` (uuid) Message ID
+      - `conversation_id` (uuid) Conversation ID
+      - `query` (string) User query
+      - `answer` (string) AI answer
+      - `inputs` (object) Input parameters
+      - `status` (string) Message status
+      - `created_at` (string) Created timestamp
+    - `agent_thoughts` (array) Agent thought chain (Agent apps only)
+
+    ### Errors
+    - 401, Invalid API Token
+    - 404, No execution found for trace ID
+
+  </Col>
+  <Col sticky>
+
+    <CodeGroup
+      title="Request"
+      tag="GET"
+      label="/custom/apps/{app_id}/trace/{trace_id}"
+      targetCode={`# 1. Send message with trace_id
+curl -X POST '${props.appDetail.api_base_url}/chat-messages' \\
+--header 'Authorization: Bearer {api_key}' \\
+--header 'X-Trace-Id: order-12345' \\
+--header 'Content-Type: application/json' \\
+--data-raw '{
+    "inputs": {},
+    "query": "Hello",
+    "response_mode": "blocking",
+    "user": "user-123"
+}'
+
+# 2. Query execution by trace_id
+curl -X GET '${props.appDetail.api_base_url}/custom/apps/${props.appDetail.id}/trace/order-12345' \\
+--header 'Authorization: Bearer {api_key}'`}
+    />
+
+    <CodeGroup title="Response">
+    ```json {{ title: 'Response' }}
+    {
+      "type": "chat",
+      "message": {
+        "id": "msg_xxx",
+        "conversation_id": "conv_xxx",
+        "query": "Hello",
+        "answer": "Hello! How can I help you today?",
+        "inputs": {},
+        "status": "normal",
+        "created_at": "2026-02-03T10:00:00Z",
+        "external_trace_id": "order-12345"
+      },
+      "agent_thoughts": [],
+      "workflow_run": null,
+      "node_executions": []
+    }
+    ```
+    </CodeGroup>
+  </Col>
+</Row>
+
+---
+
+<Heading
   url='/files/:file_id/preview'
   method='GET'
   title='File Preview'
