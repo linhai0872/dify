@@ -35,9 +35,9 @@ import { ToastContext } from '@/app/components/base/toast'
 import Tooltip from '@/app/components/base/tooltip'
 import { addFileInfos, sortAgentSorts } from '@/app/components/tools/utils'
 import { WorkflowContextProvider } from '@/app/components/workflow/context'
-import { useAppContext } from '@/context/app-context'
 import useBreakpoints, { MediaType } from '@/hooks/use-breakpoints'
-import useTimestamp from '@/hooks/use-timestamp'
+// [CUSTOM] Use unified log timezone hook
+import useCustomLogTimestamp from '@/hooks/use-custom-log-timestamp'
 import { fetchChatMessages, updateLogMessageAnnotations, updateLogMessageFeedbacks } from '@/service/log'
 import { AppSourceType } from '@/service/share'
 import { useChatConversationDetail, useCompletionConversationDetail } from '@/service/use-log'
@@ -211,8 +211,8 @@ type IDetailPanel = {
 function DetailPanel({ detail, onFeedback }: IDetailPanel) {
   const MIN_ITEMS_FOR_SCROLL_LOADING = 8
   const SCROLL_DEBOUNCE_MS = 200
-  const { userProfile: { timezone } } = useAppContext()
-  const { formatTime } = useTimestamp()
+  // [CUSTOM] Use unified log timezone
+  const { effectiveTimezone: timezone, formatTime } = useCustomLogTimestamp()
   const { onClose, appDetail } = useContext(DrawerContext)
   const { notify } = useContext(ToastContext)
   const { currentLogItem, setCurrentLogItem, showMessageLogModal, setShowMessageLogModal, showPromptLogModal, setShowPromptLogModal, currentLogModalActiveTab } = useAppStore(useShallow((state: AppStoreState) => ({
@@ -860,7 +860,8 @@ const ChatConversationDetailComp: FC<{ appId?: string, conversationId?: string }
  */
 const ConversationList: FC<IConversationList> = ({ logs, appDetail, onRefresh }) => {
   const { t } = useTranslation()
-  const { formatTime } = useTimestamp()
+  // [CUSTOM] Use unified log timezone
+  const { formatTime } = useCustomLogTimestamp()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()

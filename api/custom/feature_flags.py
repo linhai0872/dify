@@ -21,3 +21,11 @@ def _get_bool_env(key: str, default: bool = True) -> bool:
 # - Enables /custom/apps/<app_id>/trace/<trace_id> API endpoints
 # - Adds keyword_scope parameter to log search APIs
 DIFY_CUSTOM_TRACE_SEARCH_ENABLED = _get_bool_env("DIFY_CUSTOM_TRACE_SEARCH_ENABLED", default=True)
+
+
+# Log Timezone Unification Feature
+# When set, all frontend log displays use this unified timezone
+# instead of each user's individual timezone setting.
+# If empty, falls back to user's individual timezone setting.
+# Example values: "Asia/Shanghai", "America/New_York", "UTC", "Europe/London"
+DIFY_CUSTOM_LOG_TIMEZONE = os.getenv("DIFY_CUSTOM_LOG_TIMEZONE", "")

@@ -10,7 +10,8 @@ import Drawer from '@/app/components/base/drawer'
 import Loading from '@/app/components/base/loading'
 import Indicator from '@/app/components/header/indicator'
 import useBreakpoints, { MediaType } from '@/hooks/use-breakpoints'
-import useTimestamp from '@/hooks/use-timestamp'
+// [CUSTOM] Use unified log timezone hook
+import useCustomLogTimestamp from '@/hooks/use-custom-log-timestamp'
 import { AppModeEnum } from '@/types/app'
 import { cn } from '@/utils/classnames'
 import DetailPanel from './detail'
@@ -26,7 +27,8 @@ const defaultValue = 'N/A'
 
 const WorkflowAppLogList: FC<ILogs> = ({ logs, appDetail, onRefresh }) => {
   const { t } = useTranslation()
-  const { formatTime } = useTimestamp()
+  // [CUSTOM] Use unified log timezone
+  const { formatTime } = useCustomLogTimestamp()
 
   const media = useBreakpoints()
   const isMobile = media === MediaType.mobile
