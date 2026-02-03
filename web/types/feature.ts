@@ -67,6 +67,8 @@ export type SystemFeatures = {
   enable_creators_platform: boolean
   enable_trial_app: boolean
   enable_explore_banner: boolean
+  // [CUSTOM] Log timezone for unified display across all users
+  log_timezone: string
 }
 
 export const defaultSystemFeatures: SystemFeatures = {
@@ -112,4 +114,6 @@ export const defaultSystemFeatures: SystemFeatures = {
   enable_creators_platform: false,
   enable_trial_app: false,
   enable_explore_banner: false,
+  // [CUSTOM] Log timezone - empty means use user's individual timezone
+  log_timezone: '',
 }

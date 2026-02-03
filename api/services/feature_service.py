@@ -180,6 +180,8 @@ class SystemFeatureModel(BaseModel):
     enable_creators_platform: bool = False
     enable_trial_app: bool = False
     enable_explore_banner: bool = False
+    # [CUSTOM] Log timezone for unified display across all users
+    log_timezone: str = ""
 
 
 class FeatureService:
@@ -259,6 +261,11 @@ class FeatureService:
         system_features.trial_models = cls._fulfill_trial_models_from_env()
         system_features.enable_trial_app = dify_config.ENABLE_TRIAL_APP
         system_features.enable_explore_banner = dify_config.ENABLE_EXPLORE_BANNER
+        # [CUSTOM] Add log timezone for unified display
+        from custom.feature_flags import DIFY_CUSTOM_LOG_TIMEZONE
+
+        system_features.log_timezone = DIFY_CUSTOM_LOG_TIMEZONE
+        # [/CUSTOM]
 
     @classmethod
     def _fulfill_trial_models_from_env(cls) -> list[str]:
