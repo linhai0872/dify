@@ -188,6 +188,12 @@ class MessageBasedAppGenerator(BaseAppGenerator):
             else:
                 conversation.updated_at = naive_utc_now()
 
+            # [CUSTOM] Get external_trace_id from extras
+            external_trace_id = None
+            if hasattr(application_generate_entity, "extras"):
+                external_trace_id = application_generate_entity.extras.get("external_trace_id")
+            # [/CUSTOM]
+
             message = Message(
                 app_id=app_config.app_id,
                 model_provider=model_provider,
@@ -213,6 +219,7 @@ class MessageBasedAppGenerator(BaseAppGenerator):
                 from_end_user_id=end_user_id,
                 from_account_id=account_id,
                 app_mode=app_config.app_mode,
+                external_trace_id=external_trace_id,  # [CUSTOM]
             )
 
             db.session.add(message)

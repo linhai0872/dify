@@ -53,6 +53,12 @@ class WorkflowRunPayload(BaseModel):
 
 class WorkflowLogQuery(BaseModel):
     keyword: str | None = None
+    # [CUSTOM] Add keyword_scope parameter
+    keyword_scope: str | None = Field(
+        default=None,
+        description="Search scope: all (default), inputs, outputs, session_id, run_id, trace_id",
+    )
+    # [/CUSTOM]
     status: Literal["succeeded", "failed", "stopped"] | None = None
     created_at__before: str | None = None
     created_at__after: str | None = None
@@ -316,6 +322,7 @@ class WorkflowAppLogApi(Resource):
                 session=session,
                 app_model=app_model,
                 keyword=args.keyword,
+                keyword_scope=args.keyword_scope,  # [CUSTOM]
                 status=status,
                 created_at_before=created_at_before,
                 created_at_after=created_at_after,

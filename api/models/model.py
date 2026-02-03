@@ -1042,6 +1042,8 @@ class Message(Base):
         Index("message_workflow_run_id_idx", "conversation_id", "workflow_run_id"),
         Index("message_app_mode_idx", "app_mode"),
         Index("message_created_at_id_idx", "created_at", "id"),
+        # [CUSTOM] Index for external trace ID lookup
+        Index("message_external_trace_id_idx", "app_id", "external_trace_id"),
     )
 
     id: Mapped[str] = mapped_column(StringUUID, default=lambda: str(uuid4()))
@@ -1082,6 +1084,8 @@ class Message(Base):
     agent_based: Mapped[bool] = mapped_column(sa.Boolean, nullable=False, server_default=sa.text("false"))
     workflow_run_id: Mapped[str | None] = mapped_column(StringUUID)
     app_mode: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # [CUSTOM] External trace ID for tracking
+    external_trace_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
     @property
     def inputs(self) -> dict[str, Any]:

@@ -27,6 +27,12 @@ DEFAULT_REF_TEMPLATE_SWAGGER_2_0 = "#/definitions/{model}"
 
 class BaseConversationQuery(BaseModel):
     keyword: str | None = Field(default=None, description="Search keyword")
+    # [CUSTOM] Add keyword_scope parameter
+    keyword_scope: str | None = Field(
+        default=None,
+        description="Search scope: all (default), query, inputs, outputs, session_id, trace_id",
+    )
+    # [/CUSTOM]
     start: str | None = Field(default=None, description="Start date (YYYY-MM-DD HH:MM)")
     end: str | None = Field(default=None, description="End date (YYYY-MM-DD HH:MM)")
     annotation_status: Literal["annotated", "not_annotated", "all"] = Field(
@@ -352,12 +358,45 @@ class CompletionConversationApi(Resource):
             from libs.helper import escape_like_pattern
 
             escaped_keyword = escape_like_pattern(args.keyword)
-            query = query.join(Message, Message.conversation_id == Conversation.id).where(
-                or_(
-                    Message.query.ilike(f"%{escaped_keyword}%", escape="\\"),
-                    Message.answer.ilike(f"%{escaped_keyword}%", escape="\\"),
+            keyword_filter = f"%{escaped_keyword}%"
+
+            # [CUSTOM] Build keyword conditions based on keyword_scope
+            scope = args.keyword_scope or "all"
+
+            if scope == "all":
+                # Original behavior: search query and answer
+                query = query.join(Message, Message.conversation_id == Conversation.id).where(
+                    or_(
+                        Message.query.ilike(keyword_filter, escape="\\"),
+                        Message.answer.ilike(keyword_filter, escape="\\"),
+                    )
                 )
-            )
+            elif scope == "query":
+                query = query.join(Message, Message.conversation_id == Conversation.id).where(
+                    Message.query.ilike(keyword_filter, escape="\\")
+                )
+            elif scope == "inputs":
+                query = query.join(Message, Message.conversation_id == Conversation.id).where(
+                    Message.inputs.ilike(keyword_filter, escape="\\")
+                )
+            elif scope == "outputs":
+                query = query.join(Message, Message.conversation_id == Conversation.id).where(
+                    Message.answer.ilike(keyword_filter, escape="\\")
+                )
+            elif scope == "trace_id":
+                # Search by external_trace_id (exact match)
+                query = query.join(Message, Message.conversation_id == Conversation.id).where(
+                    Message.external_trace_id == args.keyword
+                )
+            else:
+                # Unknown scope, fall back to 'all'
+                query = query.join(Message, Message.conversation_id == Conversation.id).where(
+                    or_(
+                        Message.query.ilike(keyword_filter, escape="\\"),
+                        Message.answer.ilike(keyword_filter, escape="\\"),
+                    )
+                )
+            # [/CUSTOM]
 
         account = current_user
         assert account.timezone is not None
@@ -468,23 +507,78 @@ class ChatConversationApi(Resource):
 
             escaped_keyword = escape_like_pattern(args.keyword)
             keyword_filter = f"%{escaped_keyword}%"
-            query = (
-                query.join(
-                    Message,
-                    Message.conversation_id == Conversation.id,
+
+            # [CUSTOM] Build keyword conditions based on keyword_scope
+            scope = args.keyword_scope or "all"
+
+            if scope == "all":
+                # Original behavior: search all fields
+                query = (
+                    query.join(
+                        Message,
+                        Message.conversation_id == Conversation.id,
+                    )
+                    .join(subquery, subquery.c.conversation_id == Conversation.id)
+                    .where(
+                        or_(
+                            Message.query.ilike(keyword_filter, escape="\\"),
+                            Message.answer.ilike(keyword_filter, escape="\\"),
+                            Conversation.name.ilike(keyword_filter, escape="\\"),
+                            Conversation.introduction.ilike(keyword_filter, escape="\\"),
+                            subquery.c.from_end_user_session_id.ilike(keyword_filter, escape="\\"),
+                        ),
+                    )
+                    .group_by(Conversation.id)
                 )
-                .join(subquery, subquery.c.conversation_id == Conversation.id)
-                .where(
-                    or_(
-                        Message.query.ilike(keyword_filter, escape="\\"),
-                        Message.answer.ilike(keyword_filter, escape="\\"),
-                        Conversation.name.ilike(keyword_filter, escape="\\"),
-                        Conversation.introduction.ilike(keyword_filter, escape="\\"),
-                        subquery.c.from_end_user_session_id.ilike(keyword_filter, escape="\\"),
-                    ),
+            elif scope == "query":
+                query = (
+                    query.join(Message, Message.conversation_id == Conversation.id)
+                    .where(Message.query.ilike(keyword_filter, escape="\\"))
+                    .group_by(Conversation.id)
                 )
-                .group_by(Conversation.id)
-            )
+            elif scope == "inputs":
+                query = (
+                    query.join(Message, Message.conversation_id == Conversation.id)
+                    .where(Message.inputs.ilike(keyword_filter, escape="\\"))
+                    .group_by(Conversation.id)
+                )
+            elif scope == "outputs":
+                query = (
+                    query.join(Message, Message.conversation_id == Conversation.id)
+                    .where(Message.answer.ilike(keyword_filter, escape="\\"))
+                    .group_by(Conversation.id)
+                )
+            elif scope == "session_id":
+                query = query.join(subquery, subquery.c.conversation_id == Conversation.id).where(
+                    subquery.c.from_end_user_session_id.ilike(keyword_filter, escape="\\")
+                )
+            elif scope == "trace_id":
+                # Search by external_trace_id (exact match)
+                query = (
+                    query.join(Message, Message.conversation_id == Conversation.id)
+                    .where(Message.external_trace_id == args.keyword)
+                    .group_by(Conversation.id)
+                )
+            else:
+                # Unknown scope, fall back to 'all'
+                query = (
+                    query.join(
+                        Message,
+                        Message.conversation_id == Conversation.id,
+                    )
+                    .join(subquery, subquery.c.conversation_id == Conversation.id)
+                    .where(
+                        or_(
+                            Message.query.ilike(keyword_filter, escape="\\"),
+                            Message.answer.ilike(keyword_filter, escape="\\"),
+                            Conversation.name.ilike(keyword_filter, escape="\\"),
+                            Conversation.introduction.ilike(keyword_filter, escape="\\"),
+                            subquery.c.from_end_user_session_id.ilike(keyword_filter, escape="\\"),
+                        ),
+                    )
+                    .group_by(Conversation.id)
+                )
+            # [/CUSTOM]
 
         account = current_user
         assert account.timezone is not None

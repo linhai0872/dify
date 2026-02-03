@@ -41,6 +41,7 @@ class WorkflowAppService:
         session: Session,
         app_model: App,
         keyword: str | None = None,
+        keyword_scope: str | None = None,  # [CUSTOM] Add keyword_scope parameter
         status: WorkflowExecutionStatus | None = None,
         created_at_before: datetime | None = None,
         created_at_after: datetime | None = None,
@@ -55,6 +56,7 @@ class WorkflowAppService:
         :param session: SQLAlchemy session
         :param app_model: app model
         :param keyword: search keyword
+        :param keyword_scope: [CUSTOM] search scope: all, inputs, outputs, session_id, run_id, trace_id
         :param status: filter by status
         :param created_at_before: filter logs created before this timestamp
         :param created_at_after: filter logs created after this timestamp
@@ -91,20 +93,59 @@ class WorkflowAppService:
             # Escape special characters in keyword to prevent SQL injection via LIKE wildcards
             escaped_keyword = escape_like_pattern(keyword[:30])
             keyword_like_val = f"%{escaped_keyword}%"
-            keyword_conditions = [
-                WorkflowRun.inputs.ilike(keyword_like_val, escape="\\"),
-                WorkflowRun.outputs.ilike(keyword_like_val, escape="\\"),
-                # filter keyword by end user session id if created by end user role
-                and_(
-                    WorkflowRun.created_by_role == "end_user",
-                    EndUser.session_id.ilike(keyword_like_val, escape="\\"),
-                ),
-            ]
 
-            # filter keyword by workflow run id
-            keyword_uuid = self._safe_parse_uuid(keyword)
-            if keyword_uuid:
-                keyword_conditions.append(WorkflowRun.id == keyword_uuid)
+            # [CUSTOM] Build keyword conditions based on keyword_scope
+            keyword_conditions = []
+            scope = keyword_scope or "all"  # Default to 'all' for backward compatibility
+
+            if scope == "all":
+                # Original behavior: search all fields
+                keyword_conditions = [
+                    WorkflowRun.inputs.ilike(keyword_like_val, escape="\\"),
+                    WorkflowRun.outputs.ilike(keyword_like_val, escape="\\"),
+                    and_(
+                        WorkflowRun.created_by_role == "end_user",
+                        EndUser.session_id.ilike(keyword_like_val, escape="\\"),
+                    ),
+                ]
+                keyword_uuid = self._safe_parse_uuid(keyword)
+                if keyword_uuid:
+                    keyword_conditions.append(WorkflowRun.id == keyword_uuid)
+            elif scope == "inputs":
+                keyword_conditions = [WorkflowRun.inputs.ilike(keyword_like_val, escape="\\")]
+            elif scope == "outputs":
+                keyword_conditions = [WorkflowRun.outputs.ilike(keyword_like_val, escape="\\")]
+            elif scope == "session_id":
+                keyword_conditions = [
+                    and_(
+                        WorkflowRun.created_by_role == "end_user",
+                        EndUser.session_id.ilike(keyword_like_val, escape="\\"),
+                    )
+                ]
+            elif scope == "run_id":
+                keyword_uuid = self._safe_parse_uuid(keyword)
+                if keyword_uuid:
+                    keyword_conditions = [WorkflowRun.id == keyword_uuid]
+                else:
+                    # If not a valid UUID, search by exact match
+                    keyword_conditions = [WorkflowRun.id == keyword]
+            elif scope == "trace_id":
+                # [CUSTOM] Search by external_trace_id
+                keyword_conditions = [WorkflowRun.external_trace_id == keyword]
+            else:
+                # Unknown scope, fall back to 'all'
+                keyword_conditions = [
+                    WorkflowRun.inputs.ilike(keyword_like_val, escape="\\"),
+                    WorkflowRun.outputs.ilike(keyword_like_val, escape="\\"),
+                    and_(
+                        WorkflowRun.created_by_role == "end_user",
+                        EndUser.session_id.ilike(keyword_like_val, escape="\\"),
+                    ),
+                ]
+                keyword_uuid = self._safe_parse_uuid(keyword)
+                if keyword_uuid:
+                    keyword_conditions.append(WorkflowRun.id == keyword_uuid)
+            # [/CUSTOM]
 
             stmt = stmt.outerjoin(
                 EndUser,

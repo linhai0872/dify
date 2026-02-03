@@ -171,6 +171,9 @@ class SQLAlchemyWorkflowExecutionRepository(WorkflowExecutionRepository):
         else:
             db_model.elapsed_time = 0
 
+        # [CUSTOM] Set external_trace_id
+        db_model.external_trace_id = domain_model.external_trace_id
+
         return db_model
 
     def save(self, execution: WorkflowExecution):
