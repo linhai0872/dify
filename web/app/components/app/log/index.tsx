@@ -3,6 +3,9 @@ import type { FC } from 'react'
 import type { App } from '@/types/app'
 import { useDebounce } from 'ahooks'
 import dayjs from 'dayjs'
+// [CUSTOM] Import timezone plugins for unified log timezone
+import timezone from 'dayjs/plugin/timezone'
+import utc from 'dayjs/plugin/utc'
 import { omit } from 'es-toolkit/object'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import * as React from 'react'
@@ -11,11 +14,17 @@ import { useTranslation } from 'react-i18next'
 import Loading from '@/app/components/base/loading'
 import Pagination from '@/app/components/base/pagination'
 import { APP_PAGE_LIMIT } from '@/config'
+// [CUSTOM] Import unified log timezone hook
+import useCustomLogTimestamp from '@/hooks/use-custom-log-timestamp'
 import { useChatConversations, useCompletionConversations } from '@/service/use-log'
 import { AppModeEnum } from '@/types/app'
 import EmptyElement from './empty-element'
 import Filter, { TIME_PERIOD_MAPPING } from './filter'
 import List from './list'
+
+// [CUSTOM] Extend dayjs with timezone plugins
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 export type ILogsProps = {
   appDetail: App
@@ -45,6 +54,8 @@ const Logs: FC<ILogsProps> = ({ appDetail }) => {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  // [CUSTOM] Use unified log timezone for time range queries
+  const { effectiveTimezone } = useCustomLogTimestamp()
   const getPageFromParams = useCallback(() => {
     const pageParam = Number.parseInt(searchParams.get('page') || '1', 10)
     if (Number.isNaN(pageParam) || pageParam < 1)
@@ -73,18 +84,21 @@ const Logs: FC<ILogsProps> = ({ appDetail }) => {
   // Get the app type first
   const isChatMode = appDetail.mode !== AppModeEnum.COMPLETION
 
+  // [CUSTOM] Use unified log timezone for time range queries
+  // Note: This API expects 'YYYY-MM-DD HH:mm' format (unlike workflow-log which uses ISO 8601)
   const query = {
     page: currPage + 1,
     limit,
     ...((debouncedQueryParams.period !== '9')
       ? {
-          start: dayjs().subtract(TIME_PERIOD_MAPPING[debouncedQueryParams.period].value, 'day').startOf('day').format('YYYY-MM-DD HH:mm'),
-          end: dayjs().endOf('day').format('YYYY-MM-DD HH:mm'),
+          start: dayjs().subtract(TIME_PERIOD_MAPPING[debouncedQueryParams.period].value, 'day').startOf('day').tz(effectiveTimezone).format('YYYY-MM-DD HH:mm'),
+          end: dayjs().endOf('day').tz(effectiveTimezone).format('YYYY-MM-DD HH:mm'),
         }
       : {}),
     ...(isChatMode ? { sort_by: debouncedQueryParams.sort_by } : {}),
     ...omit(debouncedQueryParams, ['period']),
   }
+  // [/CUSTOM]
 
   // When the details are obtained, proceed to the next request
   const { data: chatConversations, refetch: mutateChatList } = useChatConversations({
