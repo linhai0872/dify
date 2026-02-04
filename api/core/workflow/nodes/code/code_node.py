@@ -1,16 +1,15 @@
 # [CUSTOM] 文件处理相关导入
 import base64
-from pathlib import Path
-# [/CUSTOM]
 
+# [/CUSTOM]
 from collections.abc import Mapping, Sequence
 from decimal import Decimal
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from configs import dify_config
 from core.file.enums import FileTransferMethod
 from core.file.models import File
-from factories import file_factory  # [CUSTOM]
 from core.helper.code_executor.code_executor import CodeExecutionError, CodeExecutor, CodeLanguage
 from core.helper.code_executor.code_node_provider import CodeNodeProvider
 from core.helper.code_executor.javascript.javascript_code_provider import JavascriptCodeProvider
@@ -23,6 +22,7 @@ from core.workflow.node_events import NodeRunResult
 from core.workflow.nodes.base.node import Node
 from core.workflow.nodes.code.entities import CodeNodeData
 from core.workflow.nodes.code.limits import CodeNodeLimits
+from factories import file_factory  # [CUSTOM]
 
 from .exc import (
     CodeNodeError,
