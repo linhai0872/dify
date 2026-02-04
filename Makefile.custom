@@ -1,0 +1,619 @@
+# Dify 二次开发 Makefile
+# 用法: make -f Makefile.custom <target>
+
+# 配置
+DOCKER_REGISTRY ?= ghcr.io/linhai0872
+PROJECT_NAME ?= dify-custom
+VERSION ?= $(shell git rev-parse --short HEAD)
+
+# 颜色
+GREEN := \033[0;32m
+YELLOW := \033[0;33m
+RED := \033[0;31m
+NC := \033[0m
+
+.DEFAULT_GOAL := help
+
+# ============================================================
+# 一键命令 (集成度最高)
+# ============================================================
+
+setup-dev: ## 🚀 一键初始化开发环境
+	@echo "$(GREEN)🔧 初始化开发环境...$(NC)"
+	@$(MAKE) -f Makefile.custom env-init ENV=dev
+	@echo ""
+	@echo "$(GREEN)✅ 开发环境初始化完成！$(NC)"
+	@echo "$(YELLOW)📝 下一步:$(NC)"
+	@echo "  1. 编辑配置: .custom/env/.env.custom.dev"
+	@echo "  2. 启动环境: make -f Makefile.custom start-dev"
+
+setup-test: ## 🧪 一键初始化测试环境
+	@echo "$(GREEN)🔧 初始化测试环境...$(NC)"
+	@$(MAKE) -f Makefile.custom env-init ENV=test
+	@echo ""
+	@echo "$(GREEN)✅ 测试环境初始化完成！$(NC)"
+	@echo "$(YELLOW)📝 下一步:$(NC)"
+	@echo "  1. 编辑配置: .custom/env/.env.custom.test"
+	@echo "  2. 启动环境: make -f Makefile.custom start-test"
+
+setup-prod: ## 🏭 一键初始化生产环境 (服务器执行)
+	@echo "$(GREEN)🔧 初始化生产环境...$(NC)"
+	@$(MAKE) -f Makefile.custom env-init ENV=prod
+	@echo ""
+	@echo "$(GREEN)✅ 生产环境初始化完成！$(NC)"
+	@echo "$(YELLOW)📝 下一步:$(NC)"
+	@echo "  1. 编辑配置: .custom/env/.env.custom.prod"
+	@echo "  2. 构建部署: make -f Makefile.custom deploy-prod"
+
+stop-dev: ## ⏹️  一键停止开发环境
+	@echo "$(YELLOW)⏹️  停止开发环境...$(NC)"
+	@# 停止后端 (可能在端口 5001)
+	@if lsof -i:5001 > /dev/null 2>&1; then \
+		echo "$(YELLOW)停止后端进程 (端口 5001)...$(NC)"; \
+		lsof -t -i:5001 | xargs kill -9 2>/dev/null || true; \
+		echo "$(GREEN)✓ 后端已停止$(NC)"; \
+	else \
+		echo "$(YELLOW)后端未运行$(NC)"; \
+	fi
+	@# 停止前端 (可能在端口 3000)
+	@if lsof -i:3000 > /dev/null 2>&1; then \
+		echo "$(YELLOW)停止前端进程 (端口 3000)...$(NC)"; \
+		lsof -t -i:3000 | xargs kill -9 2>/dev/null || true; \
+		echo "$(GREEN)✓ 前端已停止$(NC)"; \
+	else \
+		echo "$(YELLOW)前端未运行$(NC)"; \
+	fi
+	@# 停止中间件
+	@$(MAKE) -f Makefile.custom middleware-down
+	@echo "$(GREEN)✅ 开发环境已停止$(NC)"
+
+restart-dev: ## 🔄 一键重启开发环境
+	@echo "$(YELLOW)🔄 重启开发环境...$(NC)"
+	@$(MAKE) -f Makefile.custom stop-dev
+	@echo ""
+	@$(MAKE) -f Makefile.custom start-dev
+
+start-dev: ## 🚀 一键启动开发环境 (后端+前端)
+	@if [ ! -f ".custom/env/.env.custom.dev" ]; then \
+		echo "$(RED)❌ 请先初始化开发环境: make -f Makefile.custom setup-dev$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)🚀 启动开发环境...$(NC)"
+	@echo ""
+	@echo "$(YELLOW)步骤 1/5: 启动中间件$(NC)"
+	@$(MAKE) -f Makefile.custom middleware-up
+	@echo ""
+	@echo "$(GREEN)✅ 中间件已启动$(NC)"
+	@echo ""
+	@echo "$(YELLOW)步骤 2/5: 等待数据库就绪...$(NC)"
+	@sleep 3
+	@echo "$(YELLOW)步骤 3/5: 执行数据库迁移$(NC)"
+	@$(MAKE) -f Makefile.custom db-migrate-dev
+	@echo ""
+	@echo "$(GREEN)✅ 数据库迁移完成$(NC)"
+	@echo ""
+	@echo "$(YELLOW)步骤 4/5: 启动后端 (后台运行)$(NC)"
+	@$(MAKE) -f Makefile.custom dev-api-background
+	@echo ""
+	@echo "$(YELLOW)步骤 5/5: 启动前端$(NC)"
+	@echo ""
+	@echo "$(GREEN)════════════════════════════════════════$(NC)"
+	@echo "$(GREEN)  后端: http://localhost:5001 (后台运行)$(NC)"
+	@echo "$(GREEN)  前端: http://localhost:3000 (当前终端)$(NC)"
+	@echo "$(GREEN)  后端日志: tail -f .custom/logs/api.log$(NC)"
+	@echo "$(GREEN)════════════════════════════════════════$(NC)"
+	@echo ""
+	@$(MAKE) -f Makefile.custom dev-web
+
+start-test: ## 🧪 一键启动测试环境
+	@if [ ! -f ".custom/env/.env.custom.test" ]; then \
+		echo "$(RED)❌ 请先初始化测试环境: make -f Makefile.custom setup-test$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)🧪 一键启动测试环境...$(NC)"
+	@echo ""
+	@echo "$(YELLOW)步骤 1/3: 构建测试镜像$(NC)"
+	@$(MAKE) -f Makefile.custom test-build
+	@echo ""
+	@echo "$(YELLOW)步骤 2/3: 启动测试容器$(NC)"
+	@$(MAKE) -f Makefile.custom test-up
+	@echo ""
+	@echo "$(YELLOW)步骤 3/3: 等待数据库迁移完成...$(NC)"
+	@echo "$(YELLOW)💡 提示: Docker 容器启动时会自动执行数据库迁移$(NC)"
+	@sleep 10
+	@echo ""
+	@echo "$(GREEN)✅ 测试环境已启动！$(NC)"
+	@echo "$(GREEN)════════════════════════════════════════$(NC)"
+	@echo "$(GREEN)  访问地址: http://localhost (端口 80)$(NC)"
+	@echo "$(GREEN)  查看日志: make -f Makefile.custom test-logs$(NC)"
+	@echo "$(GREEN)════════════════════════════════════════$(NC)"
+
+deploy-prod: ## 🏭 一键构建并部署生产环境
+	@if [ ! -f ".custom/env/.env.custom.prod" ]; then \
+		echo "$(RED)❌ 请先初始化生产环境: make -f Makefile.custom setup-prod$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)🏭 一键部署生产环境...$(NC)"
+	@echo ""
+	@echo "$(YELLOW)步骤 1/3: 构建生产镜像$(NC)"
+	@$(MAKE) -f Makefile.custom prod-build
+	@echo ""
+	@echo "$(YELLOW)步骤 2/3: 推送镜像到仓库$(NC)"
+	@$(MAKE) -f Makefile.custom prod-push
+	@echo ""
+	@echo "$(YELLOW)步骤 3/3: 滚动更新生产环境$(NC)"
+	@$(MAKE) -f Makefile.custom prod-deploy
+	@echo ""
+	@echo "$(GREEN)✅ 生产环境部署完成！$(NC)"
+
+# ============================================================
+# 环境变量管理
+# ============================================================
+
+env-init: ## 初始化环境变量 (用法: make env-init ENV=dev|test|prod)
+	@if [ -z "$(ENV)" ]; then \
+		echo "$(RED)❌ 请指定环境: make -f Makefile.custom env-init ENV=dev|test|prod$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)🔧 初始化 $(ENV) 环境变量...$(NC)"
+	@[ -f api/.env ] || cp api/.env.example api/.env
+	@[ -f web/.env ] || cp web/.env.example web/.env
+	@[ -f docker/.env ] || cp docker/.env.example docker/.env
+	@[ -f docker/middleware.env ] || ([ -f docker/middleware.env.example ] && cp docker/middleware.env.example docker/middleware.env || true)
+	@mkdir -p .custom/env
+	@[ -f .custom/env/.env.custom.$(ENV) ] || cp .custom/env/.env.custom.example .custom/env/.env.custom.$(ENV)
+	@echo "$(GREEN)✅ 完成！请编辑 .custom/env/.env.custom.$(ENV) 配置二开变量$(NC)"
+	@echo "$(YELLOW)💡 提示: 三套环境变量分别是:$(NC)"
+	@echo "   - .custom/env/.env.custom.dev  (开发环境)"
+	@echo "   - .custom/env/.env.custom.test (测试环境)"
+	@echo "   - .custom/env/.env.custom.prod (生产环境)"
+
+env-merge: ## 合并二开环境变量到 docker/.env (用法: make env-merge ENV=test|prod)
+	@if [ -z "$(ENV)" ]; then \
+		echo "$(RED)❌ 请指定环境: make -f Makefile.custom env-merge ENV=test|prod$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)🔄 合并 $(ENV) 环境变量到 docker/.env...$(NC)"
+	@if [ ! -f "docker/.env" ]; then \
+		echo "$(RED)❌ docker/.env 不存在，请先运行: make -f Makefile.custom env-init ENV=$(ENV)$(NC)"; \
+		exit 1; \
+	fi
+	@if [ ! -f ".custom/env/.env.custom.$(ENV)" ]; then \
+		echo "$(RED)❌ .custom/env/.env.custom.$(ENV) 不存在$(NC)"; \
+		exit 1; \
+	fi
+	@cp docker/.env.example docker/.env
+	@echo "" >> docker/.env
+	@echo "# ====== Custom Environment Variables ($(ENV)) ======" >> docker/.env
+	@cat .custom/env/.env.custom.$(ENV) >> docker/.env
+	@echo "$(GREEN)✅ 已合并 .custom/env/.env.custom.$(ENV) → docker/.env$(NC)"
+
+# ============================================================
+# 开发环境 (本地源码启动，支持热重载)
+# ============================================================
+
+dev-start: ## 启动开发环境 (热重载)
+	@echo "$(GREEN)🚀 启动开发环境...$(NC)"
+	@echo "$(YELLOW)请在两个终端分别运行:$(NC)"
+	@echo "  终端1 (后端): make -f Makefile.custom dev-api"
+	@echo "  终端2 (前端): make -f Makefile.custom dev-web"
+	@echo ""
+	@echo "$(YELLOW)确保中间件已启动:$(NC) make -f Makefile.custom middleware-up"
+	@echo "$(YELLOW)确保环境变量已配置:$(NC) make -f Makefile.custom env-init ENV=dev"
+
+dev-api: ## 启动后端开发环境 (自动合并 api/.env + .custom/env/.env.custom.dev)
+	@echo "$(GREEN)🚀 启动后端 (开发环境)...$(NC)"
+	@# [CUSTOM] 检测 LibreOffice (DOC/PPT 提取依赖)
+	@if ! which soffice > /dev/null 2>&1; then \
+		echo "$(YELLOW)⚠️  LibreOffice 未安装，DOC/PPT 提取功能不可用$(NC)"; \
+		echo "$(YELLOW)   安装方法: brew install --cask libreoffice (macOS)$(NC)"; \
+		echo "$(YELLOW)            apt-get install libreoffice-writer-nogui libreoffice-impress-nogui (Linux)$(NC)"; \
+		echo ""; \
+	fi
+	@if [ ! -f "api/.env.example" ]; then \
+		echo "$(RED)❌ api/.env.example 不存在$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)✓ 重置 api/.env (从模板)$(NC)"
+	@cp api/.env.example api/.env
+	@if [ -f ".custom/env/.env.custom.dev" ]; then \
+		echo "$(GREEN)✓ 追加二开环境变量: .custom/env/.env.custom.dev$(NC)"; \
+		echo "" >> api/.env; \
+		echo "# ====== Custom Environment Variables (dev) ======" >> api/.env; \
+		cat .custom/env/.env.custom.dev >> api/.env; \
+	else \
+		echo "$(YELLOW)⚠️  .custom/env/.env.custom.dev 不存在，仅使用官方环境变量$(NC)"; \
+	fi
+	@echo "$(GREEN)✓ 环境变量将由 Pydantic 自动加载$(NC)"
+	@cd api && uv run flask run --host 0.0.0.0 --port 5001 --debug
+
+dev-web: ## 启动前端开发环境 (自动合并 web/.env + .custom/env/.env.custom.dev)
+	@echo "$(GREEN)🚀 启动前端 (开发环境)...$(NC)"
+	@if [ ! -f "web/.env.example" ]; then \
+		echo "$(RED)❌ web/.env.example 不存在$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)✓ 重置 web/.env (从模板)$(NC)"
+	@cp web/.env.example web/.env
+	@if [ -f ".custom/env/.env.custom.dev" ]; then \
+		echo "$(GREEN)✓ 追加二开环境变量: .custom/env/.env.custom.dev$(NC)"; \
+		echo "" >> web/.env; \
+		echo "# ====== Custom Environment Variables (dev) ======" >> web/.env; \
+		cat .custom/env/.env.custom.dev >> web/.env; \
+	else \
+		echo "$(YELLOW)⚠️  .custom/env/.env.custom.dev 不存在，仅使用官方环境变量$(NC)"; \
+	fi
+	@echo "$(GREEN)✓ 环境变量将由 Next.js 自动加载$(NC)"
+	@cd web && pnpm dev --turbo
+
+dev-api-background: ## 启动后端开发环境 (后台运行，日志输出到文件)
+	@echo "$(GREEN)🚀 启动后端 (后台运行)...$(NC)"
+	@# [CUSTOM] 检测 LibreOffice (DOC/PPT 提取依赖)
+	@if ! which soffice > /dev/null 2>&1; then \
+		echo "$(YELLOW)⚠️  LibreOffice 未安装，DOC/PPT 提取功能不可用$(NC)"; \
+		echo "$(YELLOW)   安装方法: brew install --cask libreoffice (macOS)$(NC)"; \
+		echo ""; \
+	fi
+	@if [ ! -f "api/.env.example" ]; then \
+		echo "$(RED)❌ api/.env.example 不存在$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)✓ 重置 api/.env (从模板)$(NC)"
+	@cp api/.env.example api/.env
+	@if [ -f ".custom/env/.env.custom.dev" ]; then \
+		echo "$(GREEN)✓ 追加二开环境变量: .custom/env/.env.custom.dev$(NC)"; \
+		echo "" >> api/.env; \
+		echo "# ====== Custom Environment Variables (dev) ======" >> api/.env; \
+		cat .custom/env/.env.custom.dev >> api/.env; \
+	else \
+		echo "$(YELLOW)⚠️  .custom/env/.env.custom.dev 不存在，仅使用官方环境变量$(NC)"; \
+	fi
+	@mkdir -p .custom/logs
+	@echo "$(GREEN)✓ 环境变量将由 Pydantic 自动加载$(NC)"
+	@echo "$(GREEN)✓ 后端日志将输出到: .custom/logs/api.log$(NC)"
+	@nohup sh -c 'cd api && uv run flask run --host 0.0.0.0 --port 5001 --debug' > .custom/logs/api.log 2>&1 &
+	@echo "$(YELLOW)⏳ 等待后端启动 (最多 15 秒)...$(NC)"
+	@for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do \
+		if lsof -i:5001 > /dev/null 2>&1; then \
+			echo "$(GREEN)✅ 后端已在后台启动 (PID: $$(lsof -t -i:5001 | head -1))$(NC)"; \
+			break; \
+		fi; \
+		if [ $$i -eq 15 ]; then \
+			echo "$(RED)❌ 后端启动超时，请检查日志: .custom/logs/api.log$(NC)"; \
+			tail -20 .custom/logs/api.log 2>/dev/null || true; \
+			exit 1; \
+		fi; \
+		sleep 1; \
+	done
+
+middleware-up: ## 启动中间件 (DB, Redis, Weaviate等)
+	@echo "$(GREEN)🐳 启动中间件...$(NC)"
+	@# [CUSTOM] 支持 override 文件（Sandbox 增强配置）
+	@if [ -f ".custom/docker/docker-compose.override.yaml" ]; then \
+		echo "$(YELLOW)📦 使用 Sandbox 增强配置: .custom/docker/docker-compose.override.yaml$(NC)"; \
+		cd docker && docker compose -f docker-compose.middleware.yaml \
+			-f ../.custom/docker/docker-compose.override.yaml \
+			--env-file middleware.env -p $(PROJECT_NAME)-dev up -d; \
+	else \
+		cd docker && docker compose -f docker-compose.middleware.yaml \
+			--env-file middleware.env -p $(PROJECT_NAME)-dev up -d; \
+	fi
+	@echo "$(GREEN)✅ 中间件已启动$(NC)"
+
+middleware-down: ## 停止中间件
+	@echo "$(YELLOW)⏹️  停止中间件...$(NC)"
+	@cd docker && docker compose -f docker-compose.middleware.yaml --env-file middleware.env -p $(PROJECT_NAME)-dev down
+
+# ============================================================
+# 测试环境 (本地 Docker 模拟生产)
+# ============================================================
+
+test-build: ## 构建测试镜像 (自动包含 LibreOffice)
+	@echo "$(GREEN)🔨 构建测试镜像...$(NC)"
+	@echo "$(YELLOW)步骤 1/3: 构建基础 API 镜像$(NC)"
+	docker build -t $(PROJECT_NAME)-api:test-base ./api
+	@echo "$(YELLOW)步骤 2/3: 扩展 API 镜像 (添加 LibreOffice)$(NC)"
+	docker build -t $(PROJECT_NAME)-api:test \
+		--build-arg BASE_IMAGE=$(PROJECT_NAME)-api:test-base \
+		-f .custom/docker/api/Dockerfile.api-custom .
+	@echo "$(YELLOW)步骤 3/3: 构建 Web 镜像$(NC)"
+	docker build -t $(PROJECT_NAME)-web:test ./web
+	@echo "$(GREEN)✅ 测试镜像构建完成 (含 LibreOffice)$(NC)"
+
+test-up: ## 启动测试环境
+	@echo "$(GREEN)🧪 启动测试环境...$(NC)"
+	@$(MAKE) -f Makefile.custom env-merge ENV=test
+	@cd docker && docker compose -f docker-compose.yaml --env-file .env -p $(PROJECT_NAME)-test up -d
+	@echo "$(GREEN)✅ 测试环境已启动$(NC)"
+	@echo "访问: http://localhost (端口 80)"
+
+test-down: ## 停止测试环境
+	@echo "$(YELLOW)⏹️  停止测试环境...$(NC)"
+	@cd docker && docker compose -f docker-compose.yaml -p $(PROJECT_NAME)-test down
+
+test-restart: ## 🔄 重启测试环境
+	@echo "$(YELLOW)🔄 重启测试环境...$(NC)"
+	@$(MAKE) -f Makefile.custom test-down
+	@echo ""
+	@$(MAKE) -f Makefile.custom start-test
+
+test-logs: ## 查看测试环境日志
+	@cd docker && docker compose -f docker-compose.yaml -p $(PROJECT_NAME)-test logs -f
+
+# ============================================================
+# 生产环境
+# ============================================================
+
+prod-build: ## 构建生产镜像 (自动包含 LibreOffice)
+	@echo "$(GREEN)🏗️  构建生产镜像 (版本: $(VERSION))...$(NC)"
+	@echo "$(YELLOW)步骤 1/3: 构建基础 API 镜像$(NC)"
+	docker build -t $(DOCKER_REGISTRY)/$(PROJECT_NAME)-api:$(VERSION)-base ./api
+	@echo "$(YELLOW)步骤 2/3: 扩展 API 镜像 (添加 LibreOffice)$(NC)"
+	docker build -t $(DOCKER_REGISTRY)/$(PROJECT_NAME)-api:$(VERSION) \
+		--build-arg BASE_IMAGE=$(DOCKER_REGISTRY)/$(PROJECT_NAME)-api:$(VERSION)-base \
+		-f .custom/docker/api/Dockerfile.api-custom .
+	docker tag $(DOCKER_REGISTRY)/$(PROJECT_NAME)-api:$(VERSION) $(DOCKER_REGISTRY)/$(PROJECT_NAME)-api:latest
+	@echo "$(YELLOW)步骤 3/3: 构建 Web 镜像$(NC)"
+	docker build -t $(DOCKER_REGISTRY)/$(PROJECT_NAME)-web:$(VERSION) ./web
+	docker tag $(DOCKER_REGISTRY)/$(PROJECT_NAME)-web:$(VERSION) $(DOCKER_REGISTRY)/$(PROJECT_NAME)-web:latest
+	@echo "$(GREEN)✅ 生产镜像构建完成 (含 LibreOffice)$(NC)"
+
+prod-push: ## 推送生产镜像到仓库
+	@echo "$(GREEN)📤 推送镜像到 $(DOCKER_REGISTRY)...$(NC)"
+	docker push $(DOCKER_REGISTRY)/$(PROJECT_NAME)-api:$(VERSION)
+	docker push $(DOCKER_REGISTRY)/$(PROJECT_NAME)-web:$(VERSION)
+	docker push $(DOCKER_REGISTRY)/$(PROJECT_NAME)-api:latest
+	docker push $(DOCKER_REGISTRY)/$(PROJECT_NAME)-web:latest
+	@echo "$(GREEN)✅ 镜像推送完成$(NC)"
+
+prod-deploy: ## 生产环境滚动更新 (需在服务器执行)
+	@echo "$(GREEN)🚀 滚动更新生产环境...$(NC)"
+	@$(MAKE) -f Makefile.custom env-merge ENV=prod
+	@cd docker && docker compose -f docker-compose.yaml --env-file .env pull
+	@echo "$(YELLOW)📦 更新 API 容器...$(NC)"
+	@cd docker && docker compose -f docker-compose.yaml --env-file .env up -d --no-deps api
+	@echo "$(YELLOW)⏳ 等待 API 健康检查 (最多 30 秒)...$(NC)"
+	@for i in 1 2 3 4 5 6; do \
+		if cd docker && docker compose -f docker-compose.yaml exec -T api curl -sf http://localhost:5001/health > /dev/null 2>&1; then \
+			echo "$(GREEN)✓ API 健康检查通过$(NC)"; \
+			break; \
+		fi; \
+		if [ $$i -eq 6 ]; then \
+			echo "$(YELLOW)⚠️  API 健康检查超时，继续更新 Web$(NC)"; \
+		else \
+			sleep 5; \
+		fi; \
+	done
+	@echo "$(YELLOW)📦 更新 Web 容器...$(NC)"
+	@cd docker && docker compose -f docker-compose.yaml --env-file .env up -d --no-deps web
+	@echo "$(GREEN)✅ 生产环境更新完成$(NC)"
+
+# ============================================================
+# 同步上游
+# ============================================================
+
+sync-upstream: ## 同步官方上游代码
+	@echo "$(GREEN)🔄 同步上游代码...$(NC)"
+	git fetch upstream
+	git checkout main
+	git rebase upstream/main
+	git push origin main
+	@echo "$(YELLOW)⚠️  请手动合并到 development: git checkout development && git rebase main$(NC)"
+
+# ============================================================
+# API 自定义镜像构建
+# ============================================================
+# 说明: 支持原生文档提取 (DOC/PPT)，包含 LibreOffice
+
+API_CUSTOM_IMAGE ?= dify-api-custom:latest
+API_BASE_IMAGE ?= langgenius/dify-api:0.15.3
+
+api-build: ## 构建自定义 API 镜像 (包含 LibreOffice)
+	@echo "$(GREEN)🔧 构建自定义 API 镜像...$(NC)"
+	docker build -t $(API_CUSTOM_IMAGE) \
+		--build-arg BASE_IMAGE=$(API_BASE_IMAGE) \
+		-f .custom/docker/api/Dockerfile.api-custom \
+		.
+	@echo "$(GREEN)✅ API 镜像构建完成: $(API_CUSTOM_IMAGE)$(NC)"
+	@echo "$(YELLOW)💡 启用方法: 在 .custom/env/.env.custom.* 中设置 API_IMAGE=$(API_CUSTOM_IMAGE)$(NC)"
+
+api-build-multiarch: ## 构建多架构 API 镜像 (AMD64 + ARM64)
+	@echo "$(GREEN)🔧 构建多架构 API 镜像...$(NC)"
+	docker buildx build --platform linux/amd64,linux/arm64 \
+		-t $(API_CUSTOM_IMAGE) \
+		--build-arg BASE_IMAGE=$(API_BASE_IMAGE) \
+		-f .custom/docker/api/Dockerfile.api-custom \
+		. \
+		--push
+	@echo "$(GREEN)✅ 多架构 API 镜像已推送: $(API_CUSTOM_IMAGE)$(NC)"
+
+api-install-libreoffice: ## 安装 LibreOffice (本地开发环境)
+	@echo "$(GREEN)📦 安装 LibreOffice...$(NC)"
+	@if [ "$$(uname)" = "Darwin" ]; then \
+		echo "$(YELLOW)检测到 macOS，使用 Homebrew 安装...$(NC)"; \
+		brew install --cask libreoffice; \
+	elif [ -f /etc/debian_version ]; then \
+		echo "$(YELLOW)检测到 Debian/Ubuntu，使用 apt 安装...$(NC)"; \
+		sudo apt-get update && sudo apt-get install -y libreoffice-writer-nogui libreoffice-impress-nogui fonts-liberation fonts-noto-cjk; \
+	else \
+		echo "$(RED)❌ 不支持的操作系统，请手动安装 LibreOffice$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)✅ LibreOffice 安装完成$(NC)"
+	@which soffice && echo "$(GREEN)✓ soffice 路径: $$(which soffice)$(NC)"
+
+api-test-extractors: ## 测试 API 镜像中的文档提取器
+	@echo "$(GREEN)🧪 测试 API 文档提取器...$(NC)"
+	@CONTAINER=$$(docker ps --filter "name=api" --format "{{.Names}}" | head -1); \
+	if [ -z "$$CONTAINER" ]; then \
+		echo "$(RED)❌ 未找到 API 容器$(NC)"; \
+		exit 1; \
+	fi; \
+	echo "$(YELLOW)容器: $$CONTAINER$(NC)"; \
+	echo ""; \
+	echo "$(YELLOW)测试 LibreOffice...$(NC)"; \
+	docker exec $$CONTAINER which soffice && echo "$(GREEN)✅ LibreOffice OK$(NC)" || echo "$(RED)❌ LibreOffice 未安装$(NC)"; \
+	echo ""; \
+	echo "$(YELLOW)测试 python-pptx (PPTX)...$(NC)"; \
+	docker exec $$CONTAINER python -c "from pptx import Presentation; print('✅ python-pptx OK')" 2>/dev/null || echo "$(RED)❌ python-pptx 测试失败$(NC)"; \
+	echo ""; \
+	echo "$(YELLOW)测试 ebooklib (EPUB)...$(NC)"; \
+	docker exec $$CONTAINER python -c "import ebooklib; print('✅ ebooklib OK')" 2>/dev/null || echo "$(RED)❌ ebooklib 测试失败$(NC)"; \
+	echo ""; \
+	echo "$(YELLOW)测试 unstructured (DOC/PPT)...$(NC)"; \
+	docker exec $$CONTAINER python -c "from unstructured.partition.doc import partition_doc; print('✅ unstructured.doc OK')" 2>/dev/null || echo "$(RED)❌ unstructured.doc 测试失败$(NC)"
+
+# ============================================================
+# Sandbox 自定义镜像构建
+# ============================================================
+# 说明: 支持代码节点使用系统依赖库 (如 pyzbar, opencv 等)
+# 文档: .custom/docs/migrate_docs/FORK_PRD_MIGRATION.md
+
+SANDBOX_CUSTOM_IMAGE ?= dify-sandbox-custom:latest
+SANDBOX_BASE_IMAGE ?= langgenius/dify-sandbox:0.2.12
+
+sandbox-build: ## 构建自定义 Sandbox 镜像 (当前架构)
+	@echo "$(GREEN)🔧 构建自定义 Sandbox 镜像...$(NC)"
+	docker build -t $(SANDBOX_CUSTOM_IMAGE) \
+		--build-arg BASE_IMAGE=$(SANDBOX_BASE_IMAGE) \
+		-f .custom/docker/sandbox/Dockerfile.sandbox-custom \
+		.custom/docker/sandbox/
+	@echo "$(GREEN)✅ Sandbox 镜像构建完成: $(SANDBOX_CUSTOM_IMAGE)$(NC)"
+	@echo "$(YELLOW)💡 启用方法: 在 .custom/env/.env.custom.* 中设置 SANDBOX_IMAGE=$(SANDBOX_CUSTOM_IMAGE)$(NC)"
+
+sandbox-build-multiarch: ## 构建多架构 Sandbox 镜像 (AMD64 + ARM64)
+	@echo "$(GREEN)🔧 构建多架构 Sandbox 镜像...$(NC)"
+	docker buildx build --platform linux/amd64,linux/arm64 \
+		-t $(SANDBOX_CUSTOM_IMAGE) \
+		--build-arg BASE_IMAGE=$(SANDBOX_BASE_IMAGE) \
+		-f .custom/docker/sandbox/Dockerfile.sandbox-custom \
+		.custom/docker/sandbox/ \
+		--push
+	@echo "$(GREEN)✅ 多架构 Sandbox 镜像已推送: $(SANDBOX_CUSTOM_IMAGE)$(NC)"
+
+sandbox-rebuild: ## 强制重新构建 Sandbox 镜像 (不使用缓存)
+	@echo "$(GREEN)🔧 强制重新构建 Sandbox 镜像...$(NC)"
+	docker build --no-cache -t $(SANDBOX_CUSTOM_IMAGE) \
+		--build-arg BASE_IMAGE=$(SANDBOX_BASE_IMAGE) \
+		-f .custom/docker/sandbox/Dockerfile.sandbox-custom \
+		.custom/docker/sandbox/
+	@echo "$(GREEN)✅ Sandbox 镜像重新构建完成$(NC)"
+
+sandbox-refresh-deps: ## 刷新 Sandbox Python 依赖 (通过 API)
+	@echo "$(GREEN)🔄 刷新 Sandbox Python 依赖...$(NC)"
+	@curl -s -X POST http://localhost:8194/v1/sandbox/dependencies/refresh \
+		-H "X-Api-Key: $${SANDBOX_API_KEY:-dify-sandbox}" && echo "" || \
+		echo "$(RED)❌ 刷新失败，请确保 Sandbox 服务已启动$(NC)"
+
+sandbox-test-deps: ## 测试 Sandbox 依赖是否正常
+	@echo "$(GREEN)🧪 测试 Sandbox 依赖...$(NC)"
+	@CONTAINER=$$(docker ps --filter "name=sandbox" --format "{{.Names}}" | head -1); \
+	if [ -z "$$CONTAINER" ]; then \
+		echo "$(RED)❌ 未找到 Sandbox 容器$(NC)"; \
+		exit 1; \
+	fi; \
+	echo "$(YELLOW)容器: $$CONTAINER$(NC)"; \
+	echo ""; \
+	echo "$(YELLOW)测试 pyzbar (二维码识别)...$(NC)"; \
+	docker exec $$CONTAINER python3 -c "from pyzbar import pyzbar; print('✅ pyzbar OK')" 2>/dev/null || echo "$(RED)❌ pyzbar 测试失败$(NC)"; \
+	echo ""; \
+	echo "$(YELLOW)测试 pandas (数据分析)...$(NC)"; \
+	docker exec $$CONTAINER python3 -c "import pandas; print('✅ pandas OK')" 2>/dev/null || echo "$(RED)❌ pandas 测试失败$(NC)"; \
+	echo ""; \
+	echo "$(YELLOW)测试 PyMuPDF (PDF处理)...$(NC)"; \
+	docker exec $$CONTAINER python3 -c "import fitz; print('✅ PyMuPDF OK')" 2>/dev/null || echo "$(RED)❌ PyMuPDF 测试失败$(NC)"; \
+	echo ""; \
+	echo "$(YELLOW)测试 ctypes.util.find_library...$(NC)"; \
+	docker exec $$CONTAINER python3 -c "import ctypes.util; result = ctypes.util.find_library('zbar'); print(f'✅ find_library(zbar) = {result}')" 2>/dev/null || echo "$(RED)❌ ctypes 测试失败$(NC)"
+
+sandbox-info: ## 查看 Sandbox 容器信息
+	@echo "$(GREEN)📋 Sandbox 容器信息$(NC)"
+	@echo ""
+	@CONTAINER=$$(docker ps --filter "name=sandbox" --format "{{.Names}}" | head -1); \
+	if [ -z "$$CONTAINER" ]; then \
+		echo "$(RED)❌ 未找到 Sandbox 容器$(NC)"; \
+		exit 1; \
+	fi; \
+	echo "$(YELLOW)容器名称:$(NC) $$CONTAINER"; \
+	echo "$(YELLOW)镜像:$(NC) $$(docker inspect --format='{{.Config.Image}}' $$CONTAINER)"; \
+	echo "$(YELLOW)状态:$(NC) $$(docker inspect --format='{{.State.Status}}' $$CONTAINER)"; \
+	echo ""; \
+	echo "$(YELLOW)ldconfig 缓存中的 zbar 库:$(NC)"; \
+	docker exec $$CONTAINER ldconfig -p 2>/dev/null | grep zbar || echo "  未找到"; \
+	echo ""; \
+	echo "$(YELLOW)已安装的 Python 包:$(NC)"; \
+	docker exec $$CONTAINER pip3 list 2>/dev/null | grep -E "(pyzbar|Pillow|pandas|openpyxl|PyMuPDF|python-docx|xlsxwriter|pyarrow|numpy)" || echo "  未安装自定义包"
+
+# ============================================================
+# 工具命令
+# ============================================================
+
+test-custom: ## 运行二开功能测试
+	@echo "$(GREEN)🧪 运行二开功能测试...$(NC)"
+	@if [ -d "api/tests/custom" ]; then \
+		cd api && uv run pytest tests/custom/ -v --tb=short; \
+	else \
+		echo "$(YELLOW)⚠️  api/tests/custom/ 目录不存在，跳过$(NC)"; \
+	fi
+
+db-migrate: ## 执行数据库迁移
+	@echo "$(GREEN)📊 执行数据库迁移...$(NC)"
+	cd api && uv run flask db upgrade
+
+db-migrate-dev: ## 执行数据库迁移 (开发环境，自动合并环境变量)
+	@echo "$(GREEN)📊 执行数据库迁移 (开发环境)...$(NC)"
+	@if [ ! -f "api/.env.example" ]; then \
+		echo "$(RED)❌ api/.env.example 不存在$(NC)"; \
+		exit 1; \
+	fi
+	@cp api/.env.example api/.env
+	@if [ -f ".custom/env/.env.custom.dev" ]; then \
+		echo "" >> api/.env; \
+		echo "# ====== Custom Environment Variables (dev) ======" >> api/.env; \
+		cat .custom/env/.env.custom.dev >> api/.env; \
+	fi
+	@cd api && uv run flask db upgrade
+	@echo "$(GREEN)✅ 数据库迁移完成$(NC)"
+
+db-backup: ## 备份数据库
+	@echo "$(GREEN)💾 备份数据库...$(NC)"
+	docker exec dify-db pg_dump -U postgres dify > backup_$$(date +%Y%m%d_%H%M%S).sql
+	@echo "$(GREEN)✅ 备份完成$(NC)"
+
+clean: ## 清理构建产物
+	@echo "$(YELLOW)🧹 清理中...$(NC)"
+	docker image prune -f
+	@echo "$(GREEN)✅ 清理完成$(NC)"
+
+# ============================================================
+# 帮助
+# ============================================================
+
+help: ## 显示帮助
+	@echo "Dify 二次开发命令"
+	@echo ""
+	@echo "$(GREEN)🚀 一键命令 (推荐):$(NC)"
+	@grep -E '^(setup-|start-|stop-|restart-|deploy-)' $(MAKEFILE_LIST) | grep -E ':.*?##' | awk 'BEGIN {FS = ":.*?## "}; {printf "  make -f Makefile.custom %-20s %s\n", $$1, $$2}'
+	@echo ""
+	@echo "$(GREEN)环境变量管理:$(NC)"
+	@grep -E '^env-' $(MAKEFILE_LIST) | grep -E ':.*?##' | awk 'BEGIN {FS = ":.*?## "}; {printf "  make -f Makefile.custom %-20s %s\n", $$1, $$2}'
+	@echo ""
+	@echo "$(GREEN)开发环境:$(NC)"
+	@grep -E '^(dev-|middleware-)' $(MAKEFILE_LIST) | grep -E ':.*?##' | awk 'BEGIN {FS = ":.*?## "}; {printf "  make -f Makefile.custom %-20s %s\n", $$1, $$2}'
+	@echo ""
+	@echo "$(GREEN)测试环境:$(NC)"
+	@grep -E '^test-' $(MAKEFILE_LIST) | grep -E ':.*?##' | awk 'BEGIN {FS = ":.*?## "}; {printf "  make -f Makefile.custom %-20s %s\n", $$1, $$2}'
+	@echo ""
+	@echo "$(GREEN)生产环境:$(NC)"
+	@grep -E '^prod-' $(MAKEFILE_LIST) | grep -E ':.*?##' | awk 'BEGIN {FS = ":.*?## "}; {printf "  make -f Makefile.custom %-20s %s\n", $$1, $$2}'
+	@echo ""
+	@echo "$(GREEN)API 自定义镜像 (DOC/PPT 支持):$(NC)"
+	@grep -E '^api-' $(MAKEFILE_LIST) | grep -E ':.*?##' | awk 'BEGIN {FS = ":.*?## "}; {printf "  make -f Makefile.custom %-20s %s\n", $$1, $$2}'
+	@echo ""
+	@echo "$(GREEN)Sandbox 自定义镜像:$(NC)"
+	@grep -E '^sandbox-' $(MAKEFILE_LIST) | grep -E ':.*?##' | awk 'BEGIN {FS = ":.*?## "}; {printf "  make -f Makefile.custom %-20s %s\n", $$1, $$2}'
+	@echo ""
+	@echo "$(GREEN)工具命令:$(NC)"
+	@grep -E '^(sync-|db-|clean|test-custom)' $(MAKEFILE_LIST) | grep -E ':.*?##' | awk 'BEGIN {FS = ":.*?## "}; {printf "  make -f Makefile.custom %-20s %s\n", $$1, $$2}'
+
+.PHONY: setup-dev setup-test setup-prod stop-dev restart-dev start-dev start-test deploy-prod env-init env-merge dev-start dev-api dev-web dev-api-background middleware-up middleware-down test-build test-up test-down test-restart test-logs test-custom prod-build prod-push prod-deploy sync-upstream db-migrate db-migrate-dev db-backup clean help api-build api-build-multiarch api-install-libreoffice api-test-extractors sandbox-build sandbox-build-multiarch sandbox-rebuild sandbox-refresh-deps sandbox-test-deps sandbox-info

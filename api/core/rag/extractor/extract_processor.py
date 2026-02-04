@@ -32,6 +32,22 @@ from core.rag.models.document import Document
 from extensions.ext_storage import storage
 from models.model import UploadFile
 
+# [CUSTOM] Import custom extractors for native document extraction
+try:
+    from custom.extractors import (
+        NativeDocExtractor,
+        NativeEpubExtractor,
+        NativePPTExtractor,
+        NativePPTXExtractor,
+    )
+    from custom.feature_flags import DIFY_CUSTOM_NATIVE_EXTRACTORS_ENABLED
+
+    CUSTOM_EXTRACTORS_AVAILABLE = True
+except ImportError:
+    CUSTOM_EXTRACTORS_AVAILABLE = False
+    DIFY_CUSTOM_NATIVE_EXTRACTORS_ENABLED = False
+# [/CUSTOM]
+
 SUPPORT_URL_CONTENT_TYPES = ["application/pdf", "text/plain", "application/json"]
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124"
@@ -157,8 +173,31 @@ class ExtractProcessor:
                         extractor = WordExtractor(file_path, upload_file.tenant_id, upload_file.created_by)
                     elif file_extension == ".csv":
                         extractor = CSVExtractor(file_path, autodetect_encoding=True)
+                    # [CUSTOM] Native extractors for DOC/PPT/PPTX/EPUB formats
+                    elif (
+                        file_extension == ".pptx"
+                        and CUSTOM_EXTRACTORS_AVAILABLE
+                        and DIFY_CUSTOM_NATIVE_EXTRACTORS_ENABLED
+                    ):
+                        extractor = NativePPTXExtractor(file_path)
+                    elif (
+                        file_extension == ".doc"
+                        and CUSTOM_EXTRACTORS_AVAILABLE
+                        and DIFY_CUSTOM_NATIVE_EXTRACTORS_ENABLED
+                    ):
+                        extractor = NativeDocExtractor(file_path)
+                    elif (
+                        file_extension == ".ppt"
+                        and CUSTOM_EXTRACTORS_AVAILABLE
+                        and DIFY_CUSTOM_NATIVE_EXTRACTORS_ENABLED
+                    ):
+                        extractor = NativePPTExtractor(file_path)
                     elif file_extension == ".epub":
-                        extractor = UnstructuredEpubExtractor(file_path)
+                        if CUSTOM_EXTRACTORS_AVAILABLE and DIFY_CUSTOM_NATIVE_EXTRACTORS_ENABLED:
+                            extractor = NativeEpubExtractor(file_path)
+                        else:
+                            extractor = UnstructuredEpubExtractor(file_path)
+                    # [/CUSTOM]
                     else:
                         # txt
                         extractor = TextExtractor(file_path, autodetect_encoding=True)
