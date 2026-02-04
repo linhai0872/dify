@@ -33,6 +33,15 @@ from dify_graph.variables.segments import ArrayStringSegment, FileSegment
 from .entities import DocumentExtractorNodeData, UnstructuredApiConfig
 from .exc import DocumentExtractorError, FileDownloadError, TextExtractionError, UnsupportedFileTypeError
 
+# [CUSTOM] Import custom extractors for native document extraction
+try:
+    from custom.feature_flags import DIFY_CUSTOM_NATIVE_EXTRACTORS_ENABLED
+
+    CUSTOM_NATIVE_EXTRACTORS_ENABLED = DIFY_CUSTOM_NATIVE_EXTRACTORS_ENABLED
+except ImportError:
+    CUSTOM_NATIVE_EXTRACTORS_ENABLED = False
+# [/CUSTOM]
+
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
@@ -366,6 +375,29 @@ def _extract_text_from_doc(file_content: bytes, *, unstructured_api_config: Unst
     """
     Extract text from a DOC file.
     """
+    # [CUSTOM] Try native DOC extraction first when feature is enabled
+    if CUSTOM_NATIVE_EXTRACTORS_ENABLED:
+        try:
+            from custom.extractors import NativeDocExtractor
+
+            with tempfile.NamedTemporaryFile(suffix=".doc", delete=False) as temp_file:
+                temp_file.write(file_content)
+                temp_file.flush()
+                try:
+                    extractor = NativeDocExtractor(temp_file.name)
+                    documents = extractor.extract()
+                    return "\n\n".join([doc.page_content for doc in documents])
+                finally:
+                    os.unlink(temp_file.name)
+        except ImportError:
+            pass
+        except Exception as e:
+            # If it's a LibreOffice error and API is not configured, raise it
+            if "LibreOffice" in str(e) and not unstructured_api_config.api_url:
+                raise TextExtractionError(str(e)) from e
+            logger.warning(f"Native DOC extraction failed, falling back to API: {e}")
+    # [/CUSTOM]
+
     from unstructured.partition.api import partition_via_api
 
     if not unstructured_api_config.api_url:
@@ -613,6 +645,29 @@ def _extract_text_from_excel(file_content: bytes) -> str:
 
 
 def _extract_text_from_ppt(file_content: bytes, *, unstructured_api_config: UnstructuredApiConfig) -> str:
+    # [CUSTOM] Try native PPT extraction first when feature is enabled
+    if CUSTOM_NATIVE_EXTRACTORS_ENABLED:
+        try:
+            from custom.extractors import NativePPTExtractor
+
+            with tempfile.NamedTemporaryFile(suffix=".ppt", delete=False) as temp_file:
+                temp_file.write(file_content)
+                temp_file.flush()
+                try:
+                    extractor = NativePPTExtractor(temp_file.name)
+                    documents = extractor.extract()
+                    return "\n\n".join([doc.page_content for doc in documents])
+                finally:
+                    os.unlink(temp_file.name)
+        except ImportError:
+            pass
+        except Exception as e:
+            # If it's a LibreOffice error and API is not configured, raise it
+            if "LibreOffice" in str(e) and not unstructured_api_config.api_url:
+                raise TextExtractionError(str(e)) from e
+            logger.warning(f"Native PPT extraction failed, falling back to unstructured: {e}")
+    # [/CUSTOM]
+
     from unstructured.partition.api import partition_via_api
     from unstructured.partition.ppt import partition_ppt
 
@@ -637,10 +692,30 @@ def _extract_text_from_ppt(file_content: bytes, *, unstructured_api_config: Unst
         return "\n".join([getattr(element, "text", "") for element in elements])
 
     except Exception as e:
-        raise TextExtractionError(f"Failed to extract text from PPTX: {str(e)}") from e
+        raise TextExtractionError(f"Failed to extract text from PPT: {str(e)}") from e
 
 
 def _extract_text_from_pptx(file_content: bytes, *, unstructured_api_config: UnstructuredApiConfig) -> str:
+    # [CUSTOM] Try native PPTX extraction first when feature is enabled
+    if CUSTOM_NATIVE_EXTRACTORS_ENABLED:
+        try:
+            from custom.extractors import NativePPTXExtractor
+
+            with tempfile.NamedTemporaryFile(suffix=".pptx", delete=False) as temp_file:
+                temp_file.write(file_content)
+                temp_file.flush()
+                try:
+                    extractor = NativePPTXExtractor(temp_file.name)
+                    documents = extractor.extract()
+                    return "\n\n".join([doc.page_content for doc in documents])
+                finally:
+                    os.unlink(temp_file.name)
+        except ImportError:
+            pass
+        except Exception as e:
+            logger.warning(f"Native PPTX extraction failed, falling back to unstructured: {e}")
+    # [/CUSTOM]
+
     from unstructured.partition.api import partition_via_api
     from unstructured.partition.pptx import partition_pptx
 
@@ -668,6 +743,26 @@ def _extract_text_from_pptx(file_content: bytes, *, unstructured_api_config: Uns
 
 
 def _extract_text_from_epub(file_content: bytes, *, unstructured_api_config: UnstructuredApiConfig) -> str:
+    # [CUSTOM] Try native EPUB extraction first when feature is enabled
+    if CUSTOM_NATIVE_EXTRACTORS_ENABLED:
+        try:
+            from custom.extractors import NativeEpubExtractor
+
+            with tempfile.NamedTemporaryFile(suffix=".epub", delete=False) as temp_file:
+                temp_file.write(file_content)
+                temp_file.flush()
+                try:
+                    extractor = NativeEpubExtractor(temp_file.name)
+                    documents = extractor.extract()
+                    return "\n\n".join([doc.page_content for doc in documents])
+                finally:
+                    os.unlink(temp_file.name)
+        except ImportError:
+            pass
+        except Exception as e:
+            logger.warning(f"Native EPUB extraction failed, falling back to unstructured: {e}")
+    # [/CUSTOM]
+
     from unstructured.partition.api import partition_via_api
     from unstructured.partition.epub import partition_epub
 
