@@ -16,7 +16,6 @@ from extensions.ext_database import db
 from libs.login import login_required
 from models.model import App
 
-
 # Response models for swagger documentation
 workflow_run_model = console_custom_api.model(
     "TraceWorkflowRun",

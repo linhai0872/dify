@@ -7,13 +7,12 @@ Tests cover:
 3. trace lookup API endpoints
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
 
 from core.helper.trace_id_helper import (
     DIFY_TRACE_ID_INPUT_KEY,
-    get_trace_id_from_inputs,
     get_external_trace_id_with_inputs,
+    get_trace_id_from_inputs,
     is_valid_trace_id,
 )
 

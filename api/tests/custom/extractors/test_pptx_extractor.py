@@ -8,7 +8,7 @@ Tests cover:
 4. Error handling
 """
 
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 

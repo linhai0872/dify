@@ -6,11 +6,8 @@ This service provides trace ID lookup functionality for workflow runs and messag
 
 from typing import Any
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
 from extensions.ext_database import db
-from models.model import App, AppMode, EndUser, Message, MessageAgentThought
+from models.model import App, AppMode, Message, MessageAgentThought
 from models.workflow import WorkflowNodeExecutionModel, WorkflowRun
 
 

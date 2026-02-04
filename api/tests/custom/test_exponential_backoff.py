@@ -4,7 +4,6 @@
 测试 calculate_wait_time() 函数的固定间隔和指数退避计算。
 """
 
-import pytest
 
 from core.workflow.enums import BackoffStrategy
 from core.workflow.graph_engine.error_handler import MIN_JITTER_FLOOR_SECONDS, calculate_wait_time
