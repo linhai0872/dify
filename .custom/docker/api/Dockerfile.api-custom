@@ -1,0 +1,34 @@
+# [CUSTOM] Extended API Docker image with LibreOffice support
+#
+# This Dockerfile extends the official Dify API image to add
+# LibreOffice support for native DOC/PPT document extraction.
+#
+# Build:
+#   docker build -f .custom/docker/api/Dockerfile.api-custom \
+#     --build-arg BASE_IMAGE=langgenius/dify-api:0.15.3 \
+#     -t dify-api-custom:latest .
+#
+# Usage:
+#   Set API_IMAGE=dify-api-custom:latest in your environment
+
+ARG BASE_IMAGE=langgenius/dify-api:latest
+FROM ${BASE_IMAGE}
+
+USER root
+
+# Install LibreOffice (minimal installation, ~150MB total)
+# - libreoffice-writer-nogui: For DOC file conversion
+# - libreoffice-impress-nogui: For PPT file conversion
+# - fonts-liberation: Standard fonts for document rendering
+# - fonts-noto-cjk: CJK (Chinese, Japanese, Korean) font support
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        libreoffice-writer-nogui \
+        libreoffice-impress-nogui \
+        fonts-liberation \
+        fonts-noto-cjk && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Switch back to non-root user for security
+USER dify

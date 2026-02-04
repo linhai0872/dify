@@ -29,3 +29,14 @@ DIFY_CUSTOM_TRACE_SEARCH_ENABLED = _get_bool_env("DIFY_CUSTOM_TRACE_SEARCH_ENABL
 # If empty, falls back to user's individual timezone setting.
 # Example values: "Asia/Shanghai", "America/New_York", "UTC", "Europe/London"
 DIFY_CUSTOM_LOG_TIMEZONE = os.getenv("DIFY_CUSTOM_LOG_TIMEZONE", "")
+
+
+# Native Document Extractors Feature
+# Enables native (non-Unstructured-API-dependent) extraction for DOC/PPT/PPTX/EPUB formats
+# in default ETL mode without requiring external Unstructured API.
+# - PPTX: Uses python-pptx (pure Python, no external dependencies)
+# - EPUB: Uses ebooklib + BeautifulSoup (pure Python, no pypandoc needed)
+# - DOC/PPT: Uses unstructured local partition (requires LibreOffice)
+DIFY_CUSTOM_NATIVE_EXTRACTORS_ENABLED = _get_bool_env(
+    "DIFY_CUSTOM_NATIVE_EXTRACTORS_ENABLED", default=True
+)

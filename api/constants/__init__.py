@@ -54,6 +54,15 @@ else:
         "vtt",
         "properties",
     }
+    # [CUSTOM] Add native extractor supported formats when feature is enabled
+    try:
+        from custom.feature_flags import DIFY_CUSTOM_NATIVE_EXTRACTORS_ENABLED
+
+        if DIFY_CUSTOM_NATIVE_EXTRACTORS_ENABLED:
+            _doc_extensions.update({"doc", "ppt", "pptx", "epub"})
+    except ImportError:
+        pass
+    # [/CUSTOM]
 DOCUMENT_EXTENSIONS: set[str] = convert_to_lower_and_upper_set(_doc_extensions)
 
 # console
