@@ -1,6 +1,7 @@
-# [CUSTOM] Sandbox 增强配置
-# 功能: 依赖管理 + 文件输入输出 + 架构自适应
+# [CUSTOM] 二开服务配置覆盖
+# 功能: Sandbox 增强 + API 原生文档提取
 # 文档: .custom/docs/features/sandbox-enhancement.md
+#       .custom/docs/features/native-extractors.md
 #
 # 使用方式:
 #   docker compose -f docker-compose.middleware.yaml \
@@ -8,6 +9,16 @@
 #       --env-file middleware.env up -d
 
 services:
+  # [CUSTOM] API 服务 - 支持原生文档提取 (DOC/PPT)
+  # 需要先构建自定义镜像: make -f Makefile.custom api-build
+  api:
+    image: ${API_IMAGE:-langgenius/dify-api:0.15.3}
+
+  # [CUSTOM] Worker 服务 - 与 API 使用相同镜像
+  worker:
+    image: ${API_IMAGE:-langgenius/dify-api:0.15.3}
+
+  # [CUSTOM] Sandbox 增强
   sandbox:
     # 使用自定义镜像（包含系统依赖）
     image: ${SANDBOX_IMAGE:-langgenius/dify-sandbox:0.2.12}

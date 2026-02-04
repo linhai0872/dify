@@ -63,6 +63,17 @@ if dify_config.ETL_TYPE == "Unstructured":
         _doc_extensions.add("ppt")
 else:
     _doc_extensions = set(_DEFAULT_DOCUMENT_EXTENSION_BASE)
+
+# [CUSTOM] Add native extractor supported formats when feature is enabled
+try:
+    from custom.feature_flags import DIFY_CUSTOM_NATIVE_EXTRACTORS_ENABLED
+
+    if DIFY_CUSTOM_NATIVE_EXTRACTORS_ENABLED:
+        _doc_extensions.update({"doc", "ppt", "pptx", "epub"})
+except ImportError:
+    pass
+# [/CUSTOM]
+
 DOCUMENT_EXTENSIONS: frozenset[str] = frozenset(convert_to_lower_and_upper_set(_doc_extensions))
 
 # console

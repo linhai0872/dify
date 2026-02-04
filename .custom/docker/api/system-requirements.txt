@@ -1,0 +1,12 @@
+# [CUSTOM] System dependencies for native document extraction
+#
+# These packages are installed in the custom API Docker image
+# to support DOC/PPT format extraction without Unstructured API.
+
+# LibreOffice components for document conversion
+libreoffice-writer-nogui
+libreoffice-impress-nogui
+
+# Font support for proper document rendering
+fonts-liberation
+fonts-noto-cjk
