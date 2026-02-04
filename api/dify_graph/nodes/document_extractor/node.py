@@ -395,7 +395,7 @@ def _extract_text_from_doc(file_content: bytes, *, unstructured_api_config: Unst
             # If it's a LibreOffice error and API is not configured, raise it
             if "LibreOffice" in str(e) and not unstructured_api_config.api_url:
                 raise TextExtractionError(str(e)) from e
-            logger.warning(f"Native DOC extraction failed, falling back to API: {e}")
+            logger.warning("Native DOC extraction failed, falling back to API: %s", e)
     # [/CUSTOM]
 
     from unstructured.partition.api import partition_via_api
@@ -665,7 +665,7 @@ def _extract_text_from_ppt(file_content: bytes, *, unstructured_api_config: Unst
             # If it's a LibreOffice error and API is not configured, raise it
             if "LibreOffice" in str(e) and not unstructured_api_config.api_url:
                 raise TextExtractionError(str(e)) from e
-            logger.warning(f"Native PPT extraction failed, falling back to unstructured: {e}")
+            logger.warning("Native PPT extraction failed, falling back to unstructured: %s", e)
     # [/CUSTOM]
 
     from unstructured.partition.api import partition_via_api
@@ -713,7 +713,7 @@ def _extract_text_from_pptx(file_content: bytes, *, unstructured_api_config: Uns
         except ImportError:
             pass
         except Exception as e:
-            logger.warning(f"Native PPTX extraction failed, falling back to unstructured: {e}")
+            logger.warning("Native PPTX extraction failed, falling back to unstructured: %s", e)
     # [/CUSTOM]
 
     from unstructured.partition.api import partition_via_api
@@ -760,7 +760,7 @@ def _extract_text_from_epub(file_content: bytes, *, unstructured_api_config: Uns
         except ImportError:
             pass
         except Exception as e:
-            logger.warning(f"Native EPUB extraction failed, falling back to unstructured: {e}")
+            logger.warning("Native EPUB extraction failed, falling back to unstructured: %s", e)
     # [/CUSTOM]
 
     from unstructured.partition.api import partition_via_api

@@ -214,7 +214,7 @@ class TestNativeEpubExtractor:
         mock_item.get_type.return_value = ITEM_DOCUMENT
         mock_item.get_name.return_value = "chapter1.xhtml"
         # Content with special characters
-        mock_item.get_content.return_value = "<html><body><p>Café résumé</p></body></html>".encode("utf-8")
+        mock_item.get_content.return_value = "<html><body><p>Café résumé</p></body></html>".encode()
 
         mock_book = MagicMock()
         mock_book.get_items.return_value = [mock_item]

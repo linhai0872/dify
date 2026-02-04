@@ -8,8 +8,6 @@ and its integration with SystemFeatureModel.
 import os
 from unittest.mock import patch
 
-import pytest
-
 
 class TestLogTimezoneFeatureFlag:
     """Test DIFY_CUSTOM_LOG_TIMEZONE feature flag."""
@@ -57,7 +55,7 @@ class TestLogTimezoneFeatureFlag:
 
                 importlib.reload(ff)
 
-                assert ff.DIFY_CUSTOM_LOG_TIMEZONE == tz
+                assert tz == ff.DIFY_CUSTOM_LOG_TIMEZONE
 
 
 class TestSystemFeatureModelLogTimezone:
