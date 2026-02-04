@@ -5,7 +5,10 @@ from enum import StrEnum
 from flask_restx import Namespace
 from pydantic import BaseModel, TypeAdapter
 
-from controllers.console import console_ns
+# [CUSTOM] 移除模块级别的 console_ns 导入以避免循环依赖
+# 原因: upstream 1.12.0 在此导入 console_ns 导致循环导入
+# 解决: 延迟导入移至 get_or_create_model 函数内部
+# [/CUSTOM]
 
 DEFAULT_REF_TEMPLATE_SWAGGER_2_0 = "#/definitions/{model}"
 
@@ -24,6 +27,10 @@ def register_schema_models(namespace: Namespace, *models: type[BaseModel]) -> No
 
 
 def get_or_create_model(model_name: str, field_def):
+    # [CUSTOM] 延迟导入以避免循环依赖
+    from controllers.console import console_ns
+
+    # [/CUSTOM]
     existing = console_ns.models.get(model_name)
     if existing is None:
         existing = console_ns.model(model_name, field_def)
