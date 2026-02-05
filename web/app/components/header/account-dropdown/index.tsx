@@ -10,6 +10,7 @@ import {
   RiLogoutBoxRLine,
   RiMap2Line,
   RiSettings3Line,
+  RiShieldUserLine,
   RiStarLine,
   RiTShirt2Line,
 } from '@remixicon/react'
@@ -28,6 +29,7 @@ import { useGlobalPublicStore } from '@/context/global-public-context'
 import { useDocLink } from '@/context/i18n'
 import { useModalContext } from '@/context/modal-context'
 import { useProviderContext } from '@/context/provider-context'
+import { useIsSuperAdmin } from '@/hooks/custom/use-system-role'
 import { useLogout } from '@/service/use-common'
 import { cn } from '@/utils/classnames'
 import AccountAbout from '../account-about'
@@ -50,6 +52,8 @@ export default function AppSelector() {
   const { userProfile, langGeniusVersionInfo, isCurrentWorkspaceOwner } = useAppContext()
   const { isEducationAccount } = useProviderContext()
   const { setShowAccountSettingModal } = useModalContext()
+  // [CUSTOM] Check if current user is super admin for system admin entry
+  const { isSuperAdmin } = useIsSuperAdmin()
 
   const { mutateAsync: logout } = useLogout()
   const handleLogout = async () => {
@@ -130,6 +134,20 @@ export default function AppSelector() {
                         <div className="system-md-regular grow px-1 text-text-secondary">{t('userProfile.settings', { ns: 'common' })}</div>
                       </div>
                     </MenuItem>
+                    {/* [CUSTOM] System Admin entry - only visible to super_admin users */}
+                    {isSuperAdmin && (
+                      <MenuItem>
+                        <Link
+                          className={cn(itemClassName, 'group', 'data-[active]:bg-state-base-hover')}
+                          href="/custom-admin/users"
+                          target="_self"
+                          rel="noopener noreferrer"
+                        >
+                          <RiShieldUserLine className="size-4 shrink-0 text-text-tertiary" />
+                          <div className="system-md-regular grow px-1 text-text-secondary">{t('admin.systemAdmin', { ns: 'custom' })}</div>
+                        </Link>
+                      </MenuItem>
+                    )}
                   </div>
                   {!systemFeatures.branding.enabled && (
                     <>

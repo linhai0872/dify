@@ -105,6 +105,8 @@ class Account(UserMixin, TypeBase):
         DateTime, server_default=func.current_timestamp(), nullable=False, init=False
     )
     status: Mapped[str] = mapped_column(String(16), server_default=sa.text("'active'"), default="active")
+    # [CUSTOM] System-level role for multi-workspace permission control
+    system_role: Mapped[str] = mapped_column(String(20), server_default=sa.text("'normal'"), default="normal")
     initialized_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.current_timestamp(), nullable=False, init=False

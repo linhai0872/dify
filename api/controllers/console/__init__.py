@@ -84,6 +84,12 @@ from .auth import (
 # Import billing controllers
 from .billing import billing, compliance
 
+# [CUSTOM] Import custom controllers for multi-workspace permission control
+from .custom import (
+    admin_user,
+    admin_workspace,
+)
+
 # Import datasets controllers
 from .datasets import (
     data_source,
@@ -139,6 +145,8 @@ __all__ = [
     "account",
     "activate",
     "admin",
+    "admin_user",  # [CUSTOM]
+    "admin_workspace",  # [CUSTOM]
     "advanced_prompt_template",
     "agent",
     "agent_providers",
