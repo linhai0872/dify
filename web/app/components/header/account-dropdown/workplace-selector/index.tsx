@@ -14,8 +14,55 @@ import { memo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PlanBadge } from '@/app/components/header/plan-badge'
 import { useWorkspacesContext } from '@/context/workspace-context'
+import { useIsSuperAdmin } from '@/hooks/custom/use-system-role'
 import { switchWorkspace } from '@/service/common'
+import { cn } from '@langgenius/dify-ui/cn'
 import { basePath } from '@/utils/var'
+
+// [CUSTOM] Workspace role colors with semantic design system colors
+const workspaceRoleColors: Record<string, { bg: string, text: string }> = {
+  owner: { bg: 'bg-util-colors-violet-violet-50', text: 'text-util-colors-violet-violet-600' },
+  admin: { bg: 'bg-util-colors-blue-light-blue-50', text: 'text-util-colors-blue-light-blue-600' },
+  editor: { bg: 'bg-util-colors-green-green-50', text: 'text-util-colors-green-green-600' },
+  normal: { bg: 'bg-components-badge-bg-gray', text: 'text-text-tertiary' },
+  dataset_operator: { bg: 'bg-util-colors-warning-warning-50', text: 'text-util-colors-warning-warning-600' },
+}
+
+// [CUSTOM] Role badge component for workspace role display
+const RoleBadge = ({ role }: { role?: string | null }) => {
+  const { t } = useTranslation()
+
+  if (role === null || role === undefined) {
+    return (
+      <span className="system-2xs-medium shrink-0 rounded bg-components-badge-bg-dimm px-1 py-0.5 text-text-quaternary">
+        {t('admin.readOnly', { ns: 'custom' })}
+      </span>
+    )
+  }
+
+  const roleMap: Record<string, string> = {
+    owner: t('admin.workspaceRole.owner', { ns: 'custom' }),
+    admin: t('admin.workspaceRole.admin', { ns: 'custom' }),
+    editor: t('admin.workspaceRole.editor', { ns: 'custom' }),
+    normal: t('admin.workspaceRole.normal', { ns: 'custom' }),
+    dataset_operator: t('admin.workspaceRole.datasetOperator', { ns: 'custom' }),
+  }
+
+  const displayRole = roleMap[role] || role
+  const colors = workspaceRoleColors[role] || workspaceRoleColors.normal
+
+  return (
+    <span className={cn(
+      'system-2xs-medium shrink-0 rounded px-1 py-0.5',
+      colors.bg,
+      colors.text,
+    )}
+    >
+      {displayRole}
+    </span>
+  )
+}
+// [/CUSTOM]
 
 type WorkplaceSelectorContentProps = {
   workspaces: IWorkspace[]
@@ -28,17 +75,26 @@ type WorkplaceSelectorItemProps = {
 
 const WorkplaceSelectorItem = memo(({
   workspace,
-}: WorkplaceSelectorItemProps) => (
-  <SelectItem value={workspace.id} className="gap-2 py-1 pr-2 pl-3">
-    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-components-icon-bg-blue-solid text-[13px]">
-      <span className="h-6 bg-gradient-to-r from-components-avatar-shape-fill-stop-0 to-components-avatar-shape-fill-stop-100 bg-clip-text align-middle leading-6 font-semibold text-shadow-shadow-1 uppercase opacity-90">
-        {workspace.name[0]?.toLocaleUpperCase()}
-      </span>
-    </div>
-    <SelectItemText className="system-md-regular">{workspace.name}</SelectItemText>
-    <PlanBadge plan={workspace.plan as Plan} />
-  </SelectItem>
-))
+}: WorkplaceSelectorItemProps) => {
+  // [CUSTOM] Check if multi-workspace permission feature is enabled
+  const { isFeatureEnabled } = useIsSuperAdmin()
+  // [/CUSTOM]
+
+  return (
+    <SelectItem value={workspace.id} className="gap-2 py-1 pr-2 pl-3">
+      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-components-icon-bg-blue-solid text-[13px]">
+        <span className="h-6 bg-gradient-to-r from-components-avatar-shape-fill-stop-0 to-components-avatar-shape-fill-stop-100 bg-clip-text align-middle leading-6 font-semibold text-shadow-shadow-1 uppercase opacity-90">
+          {workspace.name[0]?.toLocaleUpperCase()}
+        </span>
+      </div>
+      <SelectItemText className="system-md-regular">{workspace.name}</SelectItemText>
+      {/* [CUSTOM] Show role badge when multi-workspace permission feature is enabled */}
+      {isFeatureEnabled && <RoleBadge role={workspace.role} />}
+      {/* [/CUSTOM] */}
+      <PlanBadge plan={workspace.plan as Plan} />
+    </SelectItem>
+  )
+})
 WorkplaceSelectorItem.displayName = 'WorkplaceSelectorItem'
 
 export const WorkplaceSelectorContent = memo(({
