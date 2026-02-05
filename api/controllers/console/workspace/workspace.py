@@ -23,6 +23,9 @@ from controllers.console.wraps import (
     only_edition_enterprise,
     setup_required,
 )
+
+# [CUSTOM] Import for multi-workspace permission control
+from custom.services.custom_system_permission_service import CustomSystemPermissionService
 from enums.cloud_plan import CloudPlan
 from extensions.ext_database import db
 from libs.helper import TimestampField
@@ -94,6 +97,8 @@ tenants_fields = {
     "status": fields.String,
     "created_at": TimestampField,
     "current": fields.Boolean,
+    # [CUSTOM] Add role field for multi-workspace permission control
+    "role": fields.String,
 }
 
 workspace_fields = {"id": fields.String, "name": fields.String, "status": fields.String, "created_at": TimestampField}
@@ -106,10 +111,16 @@ class TenantListApi(Resource):
     @account_initialization_required
     def get(self):
         current_user, current_tenant_id = current_account_with_tenant()
-        tenants = TenantService.get_join_tenants(current_user)
-        tenant_dicts = []
 
-        for tenant in tenants:
+        # [CUSTOM] Use CustomSystemPermissionService to get workspaces based on system role
+        # Super admin sees all workspaces, others see only joined workspaces
+        workspace_list = CustomSystemPermissionService.get_accessible_workspaces(current_user)
+
+        tenant_dicts = []
+        for item in workspace_list:
+            tenant = item["tenant"]
+            role = item["role"]  # TenantAccountRole or None for unjoined workspaces
+
             features = FeatureService.get_features(tenant.id)
 
             # Create a dictionary with tenant attributes
@@ -120,9 +131,12 @@ class TenantListApi(Resource):
                 "created_at": tenant.created_at,
                 "plan": features.billing.subscription.plan if features.billing.enabled else CloudPlan.SANDBOX,
                 "current": tenant.id == current_tenant_id if current_tenant_id else False,
+                # [CUSTOM] Add role field - null for unjoined workspaces (super admin only)
+                "role": role.value if role else None,
             }
 
             tenant_dicts.append(tenant_dict)
+        # [/CUSTOM]
 
         return {"workspaces": marshal(tenant_dicts, tenants_fields)}, 200
 
