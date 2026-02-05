@@ -137,6 +137,8 @@ export type IWorkspace = {
   status: string
   created_at: number
   current: boolean
+  // [CUSTOM] Workspace role for multi-workspace permission control
+  role?: 'owner' | 'admin' | 'editor' | 'dataset_operator' | 'normal' | null
 }
 
 export type ICurrentWorkspace = Omit<IWorkspace, 'current'> & {

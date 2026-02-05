@@ -24,6 +24,9 @@ from controllers.console.wraps import (
     only_edition_enterprise,
     setup_required,
 )
+
+# [CUSTOM] Import for multi-workspace permission control
+from custom.services.custom_system_permission_service import CustomSystemPermissionService
 from enums.cloud_plan import CloudPlan
 from extensions.ext_database import db
 from libs.helper import TimestampField
@@ -96,6 +99,8 @@ tenants_fields = {
     "status": fields.String,
     "created_at": TimestampField,
     "current": fields.Boolean,
+    # [CUSTOM] Add role field for multi-workspace permission control
+    "role": fields.String,
 }
 
 workspace_fields = {"id": fields.String, "name": fields.String, "status": fields.String, "created_at": TimestampField}
@@ -108,20 +113,27 @@ class TenantListApi(Resource):
     @account_initialization_required
     def get(self):
         current_user, current_tenant_id = current_account_with_tenant()
-        tenants = TenantService.get_join_tenants(current_user)
-        tenant_dicts = []
+
+        # [CUSTOM] Use CustomSystemPermissionService to get workspaces based on system role
+        # Super admin sees all workspaces, others see only joined workspaces
+        workspace_list = CustomSystemPermissionService.get_accessible_workspaces(current_user)
+
         is_enterprise_only = dify_config.ENTERPRISE_ENABLED and not dify_config.BILLING_ENABLED
         is_saas = dify_config.EDITION == "CLOUD" and dify_config.BILLING_ENABLED
         tenant_plans: dict[str, SubscriptionPlan] = {}
 
         if is_saas:
-            tenant_ids = [tenant.id for tenant in tenants]
+            tenant_ids = [item["tenant"].id for item in workspace_list]
             if tenant_ids:
                 tenant_plans = BillingService.get_plan_bulk(tenant_ids)
                 if not tenant_plans:
                     logger.warning("get_plan_bulk returned empty result, falling back to legacy feature path")
 
-        for tenant in tenants:
+        tenant_dicts = []
+        for item in workspace_list:
+            tenant = item["tenant"]
+            role = item["role"]  # TenantAccountRole or None for unjoined workspaces
+
             plan: str = CloudPlan.SANDBOX
             if is_saas:
                 tenant_plan = tenant_plans.get(tenant.id)
@@ -142,6 +154,8 @@ class TenantListApi(Resource):
                 "created_at": tenant.created_at,
                 "plan": plan,
                 "current": tenant.id == current_tenant_id if current_tenant_id else False,
+                # [CUSTOM] Add role field - null for unjoined workspaces (super admin only)
+                "role": role.value if role else None,
             }
 
             tenant_dicts.append(tenant_dict)

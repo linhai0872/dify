@@ -16,6 +16,7 @@ import { useDocLink } from '@/context/i18n'
 import { useModalContext } from '@/context/modal-context'
 import { useProviderContext } from '@/context/provider-context'
 import { env } from '@/env'
+import { useIsSuperAdmin } from '@/hooks/custom/use-system-role'
 import Link from '@/next/link'
 import { useRouter } from '@/next/navigation'
 import { useLogout } from '@/service/use-common'
@@ -117,6 +118,8 @@ export default function AppSelector() {
   const { userProfile, langGeniusVersionInfo, isCurrentWorkspaceOwner } = useAppContext()
   const { isEducationAccount } = useProviderContext()
   const { setShowAccountSettingModal } = useModalContext()
+  // [CUSTOM] Check if current user is super admin for system admin entry
+  const { isSuperAdmin } = useIsSuperAdmin()
 
   const { mutateAsync: logout } = useLogout()
   const handleLogout = async () => {
@@ -173,6 +176,14 @@ export default function AppSelector() {
               label={t('userProfile.settings', { ns: 'common' })}
               onClick={() => setShowAccountSettingModal({ payload: ACCOUNT_SETTING_TAB.MEMBERS })}
             />
+            {/* [CUSTOM] System Admin entry - only visible to super_admin users */}
+            {isSuperAdmin && (
+              <AccountMenuRouteItem
+                href="/custom-admin/users"
+                iconClassName="i-ri-shield-user-line"
+                label={t('admin.systemAdmin', { ns: 'custom' })}
+              />
+            )}
           </DropdownMenuGroup>
           <DropdownMenuSeparator className="!my-0 bg-divider-subtle" />
           {!systemFeatures.branding.enabled && (
