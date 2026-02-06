@@ -107,6 +107,10 @@ def _create_workflow_run_from_execution(
     workflow_run.error = execution.error_message
     workflow_run.elapsed_time = execution.elapsed_time
     workflow_run.total_tokens = execution.total_tokens
+    # [CUSTOM] 二开: Workflow 费用统计
+    workflow_run.custom_total_price = execution.custom_total_price
+    workflow_run.custom_currency = execution.custom_currency
+    # [/CUSTOM]
     workflow_run.total_steps = execution.total_steps
     workflow_run.created_by_role = creator_user_role.value
     workflow_run.created_by = creator_user_id
@@ -128,5 +132,9 @@ def _update_workflow_run_from_execution(workflow_run: WorkflowRun, execution: Wo
     workflow_run.error = execution.error_message
     workflow_run.elapsed_time = execution.elapsed_time
     workflow_run.total_tokens = execution.total_tokens
+    # [CUSTOM] 二开: Workflow 费用统计
+    workflow_run.custom_total_price = execution.custom_total_price
+    workflow_run.custom_currency = execution.custom_currency
+    # [/CUSTOM]
     workflow_run.total_steps = execution.total_steps
     workflow_run.finished_at = execution.finished_at

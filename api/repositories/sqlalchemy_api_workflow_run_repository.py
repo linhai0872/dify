@@ -1060,9 +1060,11 @@ WHERE
         Get daily token cost statistics using raw SQL for optimal performance.
         """
         converted_created_at = convert_datetime_to_date("created_at")
+        # [CUSTOM] 二开: 添加 total_price 统计
         sql_query = f"""SELECT
     {converted_created_at} AS date,
-    SUM(total_tokens) AS token_count
+    SUM(total_tokens) AS token_count,
+    SUM(custom_total_price) AS total_price
 FROM
     workflow_runs
 WHERE
@@ -1095,6 +1097,10 @@ WHERE
                     {
                         "date": str(row.date),
                         "token_count": row.token_count,
+                        # [CUSTOM] 二开: Workflow 费用统计
+                        "total_price": row.total_price,
+                        "currency": "USD",
+                        # [/CUSTOM]
                     }
                 )
 
