@@ -16,96 +16,96 @@ class TestGetSystemRole:
     """Tests for get_system_role method."""
 
     @patch("custom.services.custom_system_permission_service.DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED", False)
-    def test_returns_normal_when_feature_disabled(self):
-        """When feature is disabled, always return NORMAL."""
+    def test_returns_user_when_feature_disabled(self):
+        """When feature is disabled, always return USER."""
         account = MagicMock()
-        account.system_role = "super_admin"
+        account.system_role = "system_admin"
 
         result = CustomSystemPermissionService.get_system_role(account)
 
-        assert result == SystemRole.NORMAL
+        assert result == SystemRole.USER
 
     @patch("custom.services.custom_system_permission_service.DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED", True)
-    def test_returns_super_admin_role(self):
-        """Returns super_admin when account has that role."""
+    def test_returns_system_admin_role(self):
+        """Returns system_admin when account has that role."""
         account = MagicMock()
-        account.system_role = "super_admin"
+        account.system_role = "system_admin"
 
         result = CustomSystemPermissionService.get_system_role(account)
 
-        assert result == SystemRole.SUPER_ADMIN
+        assert result == SystemRole.SYSTEM_ADMIN
 
     @patch("custom.services.custom_system_permission_service.DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED", True)
-    def test_returns_workspace_admin_role(self):
-        """Returns workspace_admin when account has that role."""
+    def test_returns_tenant_manager_role(self):
+        """Returns tenant_manager when account has that role."""
         account = MagicMock()
-        account.system_role = "workspace_admin"
+        account.system_role = "tenant_manager"
 
         result = CustomSystemPermissionService.get_system_role(account)
 
-        assert result == SystemRole.WORKSPACE_ADMIN
+        assert result == SystemRole.TENANT_MANAGER
 
     @patch("custom.services.custom_system_permission_service.DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED", True)
-    def test_returns_normal_role(self):
-        """Returns normal when account has that role."""
+    def test_returns_user_role(self):
+        """Returns user when account has that role."""
         account = MagicMock()
-        account.system_role = "normal"
+        account.system_role = "user"
 
         result = CustomSystemPermissionService.get_system_role(account)
 
-        assert result == SystemRole.NORMAL
+        assert result == SystemRole.USER
 
     @patch("custom.services.custom_system_permission_service.DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED", True)
-    def test_returns_normal_for_invalid_role(self):
-        """Returns NORMAL when account has invalid role string."""
+    def test_returns_user_for_invalid_role(self):
+        """Returns USER when account has invalid role string."""
         account = MagicMock()
         account.system_role = "invalid_role"
 
         result = CustomSystemPermissionService.get_system_role(account)
 
-        assert result == SystemRole.NORMAL
+        assert result == SystemRole.USER
 
     @patch("custom.services.custom_system_permission_service.DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED", True)
-    def test_returns_normal_when_role_missing(self):
-        """Returns NORMAL when account doesn't have system_role attribute."""
+    def test_returns_user_when_role_missing(self):
+        """Returns USER when account doesn't have system_role attribute."""
         account = MagicMock(spec=[])  # No attributes
 
         result = CustomSystemPermissionService.get_system_role(account)
 
-        assert result == SystemRole.NORMAL
+        assert result == SystemRole.USER
 
 
-class TestIsSuperAdmin:
-    """Tests for is_super_admin method."""
+class TestIsSystemAdmin:
+    """Tests for is_system_admin method."""
 
     @patch("custom.services.custom_system_permission_service.DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED", True)
-    def test_returns_true_for_super_admin(self):
-        """Returns True for super_admin account."""
+    def test_returns_true_for_system_admin(self):
+        """Returns True for system_admin account."""
         account = MagicMock()
-        account.system_role = "super_admin"
+        account.system_role = "system_admin"
 
-        result = CustomSystemPermissionService.is_super_admin(account)
+        result = CustomSystemPermissionService.is_system_admin(account)
 
         assert result is True
 
     @patch("custom.services.custom_system_permission_service.DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED", True)
-    @pytest.mark.parametrize("role", ["workspace_admin", "normal", "invalid"])
-    def test_returns_false_for_non_super_admin(self, role: str):
-        """Returns False for non-super_admin accounts."""
+    @pytest.mark.parametrize("role", ["tenant_manager", "user", "invalid"])
+    def test_returns_false_for_non_system_admin(self, role: str):
+        """Returns False for non-system_admin accounts."""
         account = MagicMock()
         account.system_role = role
 
-        result = CustomSystemPermissionService.is_super_admin(account)
+        result = CustomSystemPermissionService.is_system_admin(account)
 
         assert result is False
 
     @patch("custom.services.custom_system_permission_service.DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED", False)
     def test_returns_false_when_feature_disabled(self):
-        """Returns False when feature is disabled, even for super_admin."""
+        """Returns False when feature is disabled, even for system_admin."""
         account = MagicMock()
-        account.system_role = "super_admin"
+        account.system_role = "system_admin"
 
-        result = CustomSystemPermissionService.is_super_admin(account)
+        result = CustomSystemPermissionService.is_system_admin(account)
 
         assert result is False
 
@@ -114,19 +114,19 @@ class TestCanAccessAllWorkspaces:
     """Tests for can_access_all_workspaces method."""
 
     @patch("custom.services.custom_system_permission_service.DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED", True)
-    def test_super_admin_can_access_all(self):
-        """Super admin can access all workspaces."""
+    def test_system_admin_can_access_all(self):
+        """System admin can access all workspaces."""
         account = MagicMock()
-        account.system_role = "super_admin"
+        account.system_role = "system_admin"
 
         result = CustomSystemPermissionService.can_access_all_workspaces(account)
 
         assert result is True
 
     @patch("custom.services.custom_system_permission_service.DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED", True)
-    @pytest.mark.parametrize("role", ["workspace_admin", "normal"])
+    @pytest.mark.parametrize("role", ["tenant_manager", "user"])
     def test_others_cannot_access_all(self, role: str):
-        """Non-super_admin cannot access all workspaces."""
+        """Non-system_admin cannot access all workspaces."""
         account = MagicMock()
         account.system_role = role
 
@@ -138,7 +138,7 @@ class TestCanAccessAllWorkspaces:
     def test_returns_false_when_feature_disabled(self):
         """Returns False when feature is disabled."""
         account = MagicMock()
-        account.system_role = "super_admin"
+        account.system_role = "system_admin"
 
         result = CustomSystemPermissionService.can_access_all_workspaces(account)
 
@@ -149,19 +149,19 @@ class TestCanManageUsers:
     """Tests for can_manage_users method."""
 
     @patch("custom.services.custom_system_permission_service.DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED", True)
-    def test_super_admin_can_manage_users(self):
-        """Super admin can manage users."""
+    def test_system_admin_can_manage_users(self):
+        """System admin can manage users."""
         account = MagicMock()
-        account.system_role = "super_admin"
+        account.system_role = "system_admin"
 
         result = CustomSystemPermissionService.can_manage_users(account)
 
         assert result is True
 
     @patch("custom.services.custom_system_permission_service.DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED", True)
-    @pytest.mark.parametrize("role", ["workspace_admin", "normal"])
+    @pytest.mark.parametrize("role", ["tenant_manager", "user"])
     def test_others_cannot_manage_users(self, role: str):
-        """Non-super_admin cannot manage users."""
+        """Non-system_admin cannot manage users."""
         account = MagicMock()
         account.system_role = role
 
@@ -173,7 +173,7 @@ class TestCanManageUsers:
     def test_returns_false_when_feature_disabled(self):
         """Returns False when feature is disabled."""
         account = MagicMock()
-        account.system_role = "super_admin"
+        account.system_role = "system_admin"
 
         result = CustomSystemPermissionService.can_manage_users(account)
 
@@ -184,19 +184,19 @@ class TestCanAssignMembers:
     """Tests for can_assign_members method."""
 
     @patch("custom.services.custom_system_permission_service.DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED", True)
-    def test_super_admin_can_assign_members(self):
-        """Super admin can assign members to any workspace."""
+    def test_system_admin_can_assign_members(self):
+        """System admin can assign members to any workspace."""
         account = MagicMock()
-        account.system_role = "super_admin"
+        account.system_role = "system_admin"
 
         result = CustomSystemPermissionService.can_assign_members(account)
 
         assert result is True
 
     @patch("custom.services.custom_system_permission_service.DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED", True)
-    @pytest.mark.parametrize("role", ["workspace_admin", "normal"])
+    @pytest.mark.parametrize("role", ["tenant_manager", "user"])
     def test_others_cannot_assign_members(self, role: str):
-        """Non-super_admin cannot assign members to any workspace."""
+        """Non-system_admin cannot assign members to any workspace."""
         account = MagicMock()
         account.system_role = role
 
@@ -208,7 +208,7 @@ class TestCanAssignMembers:
     def test_returns_false_when_feature_disabled(self):
         """Returns False when feature is disabled."""
         account = MagicMock()
-        account.system_role = "super_admin"
+        account.system_role = "system_admin"
 
         result = CustomSystemPermissionService.can_assign_members(account)
 

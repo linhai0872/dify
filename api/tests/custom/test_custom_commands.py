@@ -66,17 +66,17 @@ class TestCustomRemoveSuperAdmin:
 class TestSystemRoleValidation:
     """Tests for SystemRole validation used by CLI commands."""
 
-    def test_super_admin_role_value(self):
-        """SystemRole.SUPER_ADMIN has correct value."""
-        assert SystemRole.SUPER_ADMIN.value == "super_admin"
+    def test_system_admin_role_value(self):
+        """SystemRole.SYSTEM_ADMIN has correct value."""
+        assert SystemRole.SYSTEM_ADMIN.value == "system_admin"
 
-    def test_normal_role_value(self):
-        """SystemRole.NORMAL has correct value."""
-        assert SystemRole.NORMAL.value == "normal"
+    def test_user_role_value(self):
+        """SystemRole.USER has correct value."""
+        assert SystemRole.USER.value == "user"
 
-    def test_is_valid_role_super_admin(self):
-        """is_valid_role returns True for super_admin."""
-        assert SystemRole.is_valid_role("super_admin") is True
+    def test_is_valid_role_system_admin(self):
+        """is_valid_role returns True for system_admin."""
+        assert SystemRole.is_valid_role("system_admin") is True
 
     def test_is_valid_role_invalid(self):
         """is_valid_role returns False for invalid role."""

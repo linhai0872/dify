@@ -5,113 +5,235 @@
  *
  * Features:
  * - List all users with pagination
- * - Search users by name or email
+ * - Search users by name or email (debounced)
  * - Filter by system role and status
  * - Modify user system role
  * - Enable/disable user accounts
+ * - Batch operations with toast feedback
  */
 
 import type { RoleOption } from '@/app/components/custom/admin'
-import type { SystemRole, UserStatus } from '@/models/custom/admin'
+import type { AdminUser, SystemRole, UserStatus } from '@/models/custom/admin'
 import {
+  RiAddLine,
   RiGroupLine,
-  RiLoader4Line,
 } from '@remixicon/react'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import Avatar from '@/app/components/base/avatar'
 import Button from '@/app/components/base/button'
+import Checkbox from '@/app/components/base/checkbox'
+import Confirm from '@/app/components/base/confirm'
 import Pagination from '@/app/components/base/pagination'
-import SearchInput from '@/app/components/base/search-input'
-import { PortalSelect } from '@/app/components/base/select'
-import { AdminPageHeader, RoleBadge, RoleOperation } from '@/app/components/custom/admin'
-import { useAdminUsers, useSystemRoles, useUpdateUserStatus, useUpdateUserSystemRole } from '@/service/custom/admin-user'
-
-// Status badge colors
-const statusColors: Record<string, { bg: string, text: string }> = {
-  active: { bg: 'bg-util-colors-green-green-50', text: 'text-util-colors-green-green-600' },
-  pending: { bg: 'bg-util-colors-warning-warning-50', text: 'text-util-colors-warning-warning-600' },
-  banned: { bg: 'bg-util-colors-red-red-50', text: 'text-util-colors-red-red-600' },
-  closed: { bg: 'bg-components-badge-bg-gray', text: 'text-text-tertiary' },
-}
+import Toast from '@/app/components/base/toast'
+import { AdminEmptyState, AdminPageHeader, AdminTableSkeleton, BatchActionBar } from '@/app/components/custom/admin'
+import CreateUserModal from '@/app/components/custom/admin/users/create-user-modal'
+import UserConfirmDialogs from '@/app/components/custom/admin/users/user-confirm-dialogs'
+import UserFilters from '@/app/components/custom/admin/users/user-filters'
+import UserTableRow from '@/app/components/custom/admin/users/user-table-row'
+import { useAdminPermissions } from '@/hooks/custom/use-custom-admin-permissions'
+import { useDebouncedValue } from '@/hooks/custom/use-custom-debounced-value'
+import { useAdminUsers, useBatchUserAction, useCreateUser, useDeleteUser, useSystemRoles, useUpdateUserStatus, useUpdateUserSystemRole } from '@/service/custom/admin-user'
+import { getSystemRoleLabel, getSystemRoleTip } from '@/utils/custom/admin-labels'
 
 export default function UsersPage() {
   const { t } = useTranslation()
-  const [page, setPage] = useState(0) // Pagination component uses 0-indexed
+  const [page, setPage] = useState(0)
   const [limit, setLimit] = useState(10)
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
 
+  const debouncedSearch = useDebouncedValue(search, 300)
+
+  // Confirmation dialog state
+  const [showStatusConfirm, setShowStatusConfirm] = useState(false)
+  const [userToToggle, setUserToToggle] = useState<{ id: string, name: string, status: UserStatus } | null>(null)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [userToDelete, setUserToDelete] = useState<{ id: string, name: string } | null>(null)
+  const [showRoleConfirm, setShowRoleConfirm] = useState(false)
+  const [pendingRoleChange, setPendingRoleChange] = useState<{ userId: string, name: string, from: SystemRole, to: SystemRole } | null>(null)
+
+  // Batch selection state
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set())
+  const [showBatchConfirm, setShowBatchConfirm] = useState(false)
+  const [batchAction, setBatchAction] = useState<'enable' | 'disable' | 'delete' | null>(null)
+
   const { data: usersData, isLoading } = useAdminUsers({
-    page: page + 1, // API uses 1-indexed
+    page: page + 1,
     limit,
-    search,
+    search: debouncedSearch,
     system_role: roleFilter,
     status: statusFilter,
   })
   const { data: rolesData } = useSystemRoles()
   const { mutate: updateRole, isPending: isUpdatingRole } = useUpdateUserSystemRole()
   const { mutate: updateStatus, isPending: isUpdatingStatus } = useUpdateUserStatus()
+  const { mutate: createUser, isPending: isCreating } = useCreateUser()
+  const { mutate: deleteUser, isPending: isDeleting } = useDeleteUser()
+  const { mutate: batchUserAction, isPending: isBatchProcessing } = useBatchUserAction()
+  const { canChangeRole, canChangeStatus, canDeleteUser, isSelf, isTargetSystemAdmin } = useAdminPermissions()
 
-  const handleRoleChange = (userId: string, role: SystemRole) => {
-    updateRole({ userId, role })
-  }
+  const handleRoleChange = useCallback((userId: string, currentRole: SystemRole, newRole: SystemRole) => {
+    const check = canChangeRole(userId, currentRole, newRole)
+    if (!check.allowed)
+      return
 
-  const handleStatusToggle = (userId: string, currentStatus: UserStatus) => {
-    const newStatus = currentStatus === 'active' ? 'banned' : 'active'
-    updateStatus({ userId, status: newStatus })
-  }
+    // Require confirmation for dangerous role changes:
+    // 1. Promoting to system_admin (grants highest privilege)
+    // 2. Demoting from tenant_manager to user (removes workspace management)
+    const needsConfirm = newRole === 'system_admin'
+      || (currentRole === 'tenant_manager' && newRole === 'user')
 
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'super_admin':
-        return t('systemRole.superAdmin', { ns: 'custom' })
-      case 'workspace_admin':
-        return t('systemRole.workspaceAdmin', { ns: 'custom' })
-      default:
-        return t('systemRole.normal', { ns: 'custom' })
+    if (needsConfirm) {
+      const user = usersData?.data?.find(u => u.id === userId)
+      setPendingRoleChange({ userId, name: user?.name || '', from: currentRole, to: newRole })
+      setShowRoleConfirm(true)
+      return
     }
-  }
 
-  const getRoleTip = (role: string) => {
-    switch (role) {
-      case 'super_admin':
-        return t('systemRole.superAdminTip', { ns: 'custom' })
-      case 'workspace_admin':
-        return t('systemRole.workspaceAdminTip', { ns: 'custom' })
-      default:
-        return t('systemRole.normalTip', { ns: 'custom' })
-    }
-  }
+    updateRole({ userId, role: newRole }, {
+      onSuccess: () => Toast.notify({ type: 'success', message: t('admin.roleUpdateSuccess', { ns: 'custom' }) }),
+      onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+    })
+  }, [canChangeRole, updateRole, usersData?.data, t])
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'active':
-        return t('admin.statusActive', { ns: 'custom' })
-      case 'pending':
-        return t('admin.statusPending', { ns: 'custom' })
-      case 'banned':
-        return t('admin.statusBanned', { ns: 'custom' })
-      default:
-        return status
+  const handleConfirmRoleChange = useCallback(() => {
+    if (pendingRoleChange) {
+      updateRole({ userId: pendingRoleChange.userId, role: pendingRoleChange.to }, {
+        onSuccess: () => Toast.notify({ type: 'success', message: t('admin.roleUpdateSuccess', { ns: 'custom' }) }),
+        onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+      })
+      setShowRoleConfirm(false)
     }
-  }
+  }, [pendingRoleChange, updateRole, t])
+
+  const handleStatusClick = useCallback((user: AdminUser) => {
+    const newStatus: UserStatus = user.status === 'active' ? 'banned' : 'active'
+    const check = canChangeStatus(user.id, user.system_role, newStatus)
+    if (!check.allowed)
+      return
+
+    if (user.status === 'active') {
+      setUserToToggle({ id: user.id, name: user.name, status: user.status })
+      setShowStatusConfirm(true)
+    }
+    else {
+      updateStatus({ userId: user.id, status: 'active' }, {
+        onSuccess: () => Toast.notify({ type: 'success', message: t('admin.statusUpdateSuccess', { ns: 'custom' }) }),
+        onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+      })
+    }
+  }, [canChangeStatus, updateStatus, t])
+
+  const handleConfirmStatusToggle = useCallback(() => {
+    if (userToToggle) {
+      const newStatus = userToToggle.status === 'active' ? 'banned' : 'active'
+      updateStatus({ userId: userToToggle.id, status: newStatus }, {
+        onSuccess: () => Toast.notify({ type: 'success', message: t('admin.statusUpdateSuccess', { ns: 'custom' }) }),
+        onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+      })
+      setShowStatusConfirm(false)
+    }
+  }, [userToToggle, updateStatus, t])
+
+  const handleCreateUser = useCallback((data: { name: string, email: string, password: string, systemRole: SystemRole }) => {
+    createUser(data, {
+      onSuccess: () => {
+        setShowCreateModal(false)
+        Toast.notify({ type: 'success', message: t('admin.userCreateSuccess', { ns: 'custom' }) })
+      },
+      onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+    })
+  }, [createUser, t])
+
+  const handleDeleteClick = useCallback((user: AdminUser) => {
+    const check = canDeleteUser(user.id, user.system_role)
+    if (!check.allowed)
+      return
+    setUserToDelete({ id: user.id, name: user.name })
+    setShowDeleteConfirm(true)
+  }, [canDeleteUser])
+
+  const handleConfirmDelete = useCallback(() => {
+    if (userToDelete) {
+      deleteUser(userToDelete.id, {
+        onSuccess: () => {
+          setShowDeleteConfirm(false)
+          Toast.notify({ type: 'success', message: t('admin.userDeleteSuccess', { ns: 'custom' }) })
+        },
+        onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+      })
+    }
+  }, [userToDelete, deleteUser, t])
+
+  // Batch selection handlers
+  const selectableUsers = useMemo(() => {
+    return usersData?.data?.filter(user => !isSelf(user.id) && !isTargetSystemAdmin(user.system_role)) || []
+  }, [usersData?.data, isSelf, isTargetSystemAdmin])
+
+  const isAllSelected = useMemo(() => {
+    return selectableUsers.length > 0 && selectableUsers.every(user => selectedUserIds.has(user.id))
+  }, [selectableUsers, selectedUserIds])
+
+  const isIndeterminate = useMemo(() => {
+    return selectedUserIds.size > 0 && !isAllSelected
+  }, [selectedUserIds.size, isAllSelected])
+
+  const handleSelectAll = useCallback(() => {
+    if (isAllSelected)
+      setSelectedUserIds(new Set())
+    else
+      setSelectedUserIds(new Set(selectableUsers.map(user => user.id)))
+  }, [isAllSelected, selectableUsers])
+
+  const handleSelectUser = useCallback((userId: string) => {
+    setSelectedUserIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(userId))
+        next.delete(userId)
+      else
+        next.add(userId)
+      return next
+    })
+  }, [])
+
+  const handleBatchAction = useCallback((action: 'enable' | 'disable' | 'delete') => {
+    setBatchAction(action)
+    setShowBatchConfirm(true)
+  }, [])
+
+  const handleConfirmBatchAction = useCallback(() => {
+    if (!batchAction || selectedUserIds.size === 0)
+      return
+
+    batchUserAction(
+      { userIds: Array.from(selectedUserIds), action: batchAction },
+      {
+        onSuccess: () => {
+          setShowBatchConfirm(false)
+          setSelectedUserIds(new Set())
+          Toast.notify({ type: 'success', message: t('admin.batchActionSuccess', { ns: 'custom', count: selectedUserIds.size }) })
+        },
+        onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+      },
+    )
+  }, [batchAction, selectedUserIds, batchUserAction, t])
 
   // Build role options for dropdown with descriptions
   const systemRolesWithTips: RoleOption[] = useMemo(() => {
     return (rolesData?.roles || []).map(role => ({
       value: role.value,
-      label: getRoleLabel(role.value),
-      description: getRoleTip(role.value),
+      label: getSystemRoleLabel(role.value, t),
+      description: getSystemRoleTip(role.value, t),
     }))
   }, [rolesData?.roles, t])
 
-  // Build filter options for PortalSelect
+  // Build filter options
   const roleFilterOptions = useMemo(() => {
     const options = [{ value: '', name: t('admin.allRoles', { ns: 'custom' }) }]
     rolesData?.roles?.forEach((role) => {
-      options.push({ value: role.value, name: getRoleLabel(role.value) })
+      options.push({ value: role.value, name: getSystemRoleLabel(role.value, t) })
     })
     return options
   }, [rolesData?.roles, t])
@@ -125,49 +247,48 @@ export default function UsersPage() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header Card */}
-      <AdminPageHeader
-        icon={<RiGroupLine className="h-6 w-6" />}
-        title={t('admin.userManagement', { ns: 'custom' })}
-        subtitle={t('admin.totalUsers', { ns: 'custom', count: usersData?.total || 0 })}
-      />
+      {/* Header */}
+      <div className="mb-6 flex items-start justify-between">
+        <AdminPageHeader
+          icon={<RiGroupLine className="h-6 w-6" />}
+          title={t('admin.userManagement', { ns: 'custom' })}
+          subtitle={t('admin.totalUsers', { ns: 'custom', count: usersData?.total || 0 })}
+        />
+        <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+          <RiAddLine className="mr-1 size-4" />
+          {t('admin.createUser', { ns: 'custom' })}
+        </Button>
+      </div>
 
       {/* Filters */}
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        {/* Search */}
-        <SearchInput
-          className="min-w-[200px] max-w-[400px] flex-1"
-          placeholder={t('admin.searchPlaceholder', { ns: 'custom' })}
-          value={search}
-          onChange={setSearch}
-        />
-
-        {/* Role Filter */}
-        <PortalSelect
-          value={roleFilter}
-          items={roleFilterOptions}
-          onSelect={item => setRoleFilter(item.value as string)}
-          popupClassName="w-[180px]"
-        />
-
-        {/* Status Filter */}
-        <PortalSelect
-          value={statusFilter}
-          items={statusFilterOptions}
-          onSelect={item => setStatusFilter(item.value as string)}
-          popupClassName="w-[140px]"
-        />
-      </div>
+      <UserFilters
+        search={search}
+        onSearchChange={setSearch}
+        roleFilter={roleFilter}
+        onRoleFilterChange={setRoleFilter}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        roleFilterOptions={roleFilterOptions}
+        statusFilterOptions={statusFilterOptions}
+      />
 
       {/* Users Table */}
       <div className="flex-1 overflow-auto rounded-xl border border-divider-subtle bg-components-panel-bg">
         {/* Table Header */}
         <div className="flex min-w-[800px] items-center border-b border-divider-regular bg-background-section-burn py-[7px]">
+          <div className="flex w-10 shrink-0 items-center justify-center">
+            <Checkbox
+              checked={isAllSelected}
+              indeterminate={isIndeterminate}
+              onCheck={handleSelectAll}
+              disabled={selectableUsers.length === 0}
+            />
+          </div>
           <div className="system-xs-medium-uppercase grow px-4 text-text-tertiary">
             {t('admin.user', { ns: 'custom' })}
           </div>
           <div className="system-xs-medium-uppercase w-[140px] shrink-0 px-3 text-text-tertiary">
-            {t('admin.systemRole', { ns: 'custom' })}
+            {t('admin.systemRoleLabel', { ns: 'custom' })}
           </div>
           <div className="system-xs-medium-uppercase w-[100px] shrink-0 px-3 text-text-tertiary">
             {t('admin.status', { ns: 'custom' })}
@@ -186,83 +307,33 @@ export default function UsersPage() {
         {/* Table Body */}
         <div className="min-w-[800px]">
           {isLoading
-            ? (
-                <div className="flex items-center justify-center py-12">
-                  <RiLoader4Line className="h-6 w-6 animate-spin text-text-tertiary" />
-                </div>
-              )
+            ? <AdminTableSkeleton rows={5} columns={5} />
             : usersData?.data?.length === 0
               ? (
-                  <div className="system-sm-regular py-12 text-center text-text-tertiary">
-                    {t('admin.noUsersFound', { ns: 'custom' })}
-                  </div>
+                  <AdminEmptyState
+                    icon={<RiGroupLine className="size-6" />}
+                    title={t('admin.noUsersFound', { ns: 'custom' })}
+                    description={search ? t('admin.tryDifferentSearch', { ns: 'custom' }) : undefined}
+                  />
                 )
               : (
                   usersData?.data?.map(user => (
-                    <div key={user.id} className="flex border-b border-divider-subtle transition-colors hover:bg-state-base-hover">
-                      {/* User Info */}
-                      <div className="flex grow items-center px-4 py-2">
-                        <Avatar avatar={user.avatar_url} name={user.name} size={32} className="mr-3" />
-                        <div className="min-w-0">
-                          <div className="system-sm-medium truncate text-text-secondary">
-                            {user.name}
-                          </div>
-                          <div className="system-xs-regular truncate text-text-tertiary">
-                            {user.email}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* System Role */}
-                      <div className="flex w-[140px] shrink-0 items-center">
-                        <RoleOperation
-                          currentRole={user.system_role}
-                          roles={systemRolesWithTips}
-                          onRoleChange={role => handleRoleChange(user.id, role as SystemRole)}
-                          disabled={isUpdatingRole}
-                        />
-                      </div>
-
-                      {/* Status */}
-                      <div className="flex w-[100px] shrink-0 items-center px-3">
-                        <RoleBadge
-                          role={user.status}
-                          label={getStatusLabel(user.status)}
-                          type="system"
-                          className={`${statusColors[user.status]?.bg || ''} ${statusColors[user.status]?.text || ''}`}
-                        />
-                      </div>
-
-                      {/* Workspaces */}
-                      <div className="flex w-[120px] shrink-0 items-center px-3">
-                        <span className="system-sm-regular text-text-secondary">
-                          {t('admin.workspaceCount', { ns: 'custom', count: user.workspaces?.length || 0 })}
-                        </span>
-                      </div>
-
-                      {/* Last Active */}
-                      <div className="flex w-[104px] shrink-0 items-center">
-                        <span className="system-sm-regular text-text-tertiary">
-                          {user.last_active_at
-                            ? new Date(user.last_active_at * 1000).toLocaleDateString()
-                            : '-'}
-                        </span>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex w-[100px] shrink-0 items-center px-3">
-                        <Button
-                          variant={user.status === 'active' ? 'warning' : 'primary'}
-                          size="small"
-                          onClick={() => handleStatusToggle(user.id, user.status)}
-                          disabled={isUpdatingStatus}
-                        >
-                          {user.status === 'active'
-                            ? t('admin.disable', { ns: 'custom' })
-                            : t('admin.enable', { ns: 'custom' })}
-                        </Button>
-                      </div>
-                    </div>
+                    <UserTableRow
+                      key={user.id}
+                      user={user}
+                      systemRolesWithTips={systemRolesWithTips}
+                      isSelected={selectedUserIds.has(user.id)}
+                      isSelectable={!isSelf(user.id) && !isTargetSystemAdmin(user.system_role)}
+                      isUpdatingRole={isUpdatingRole}
+                      isSelf={isSelf(user.id)}
+                      isSystemAdmin={isTargetSystemAdmin(user.system_role)}
+                      onSelect={handleSelectUser}
+                      onRoleChange={handleRoleChange}
+                      onStatusClick={handleStatusClick}
+                      onDeleteClick={handleDeleteClick}
+                      isUpdatingStatus={isUpdatingStatus}
+                      isDeleting={isDeleting}
+                    />
                   ))
                 )}
         </div>
@@ -279,6 +350,67 @@ export default function UsersPage() {
           onLimitChange={setLimit}
         />
       )}
+
+      {/* Create User Modal */}
+      <CreateUserModal
+        isShow={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreateUser}
+        isLoading={isCreating}
+      />
+
+      {/* Role Change Confirmation */}
+      <Confirm
+        isShow={showRoleConfirm}
+        type={pendingRoleChange?.to === 'system_admin' ? 'warning' : 'danger'}
+        title={pendingRoleChange?.to === 'system_admin'
+          ? t('admin.confirmPromoteToAdminTitle', { ns: 'custom' })
+          : t('admin.confirmDemoteRoleTitle', { ns: 'custom' })}
+        content={pendingRoleChange?.to === 'system_admin'
+          ? t('admin.confirmPromoteToAdmin', { ns: 'custom', name: pendingRoleChange?.name })
+          : t('admin.confirmDemoteRole', { ns: 'custom', name: pendingRoleChange?.name })}
+        onConfirm={handleConfirmRoleChange}
+        onCancel={() => {
+          setShowRoleConfirm(false)
+        }}
+        isLoading={isUpdatingRole}
+      />
+
+      {/* Confirmation Dialogs */}
+      <UserConfirmDialogs
+        showStatusConfirm={showStatusConfirm}
+        userToToggle={userToToggle}
+        onConfirmStatusToggle={handleConfirmStatusToggle}
+        onCancelStatusToggle={() => {
+          setShowStatusConfirm(false)
+        }}
+        isUpdatingStatus={isUpdatingStatus}
+        showDeleteConfirm={showDeleteConfirm}
+        userToDelete={userToDelete}
+        onConfirmDelete={handleConfirmDelete}
+        onCancelDelete={() => {
+          setShowDeleteConfirm(false)
+        }}
+        isDeleting={isDeleting}
+        showBatchConfirm={showBatchConfirm}
+        batchAction={batchAction}
+        selectedCount={selectedUserIds.size}
+        onConfirmBatchAction={handleConfirmBatchAction}
+        onCancelBatchAction={() => {
+          setShowBatchConfirm(false)
+        }}
+        isBatchProcessing={isBatchProcessing}
+      />
+
+      {/* Batch Action Bar */}
+      <BatchActionBar
+        selectedCount={selectedUserIds.size}
+        onEnable={() => handleBatchAction('enable')}
+        onDisable={() => handleBatchAction('disable')}
+        onDelete={() => handleBatchAction('delete')}
+        onClear={() => setSelectedUserIds(new Set())}
+        isLoading={isBatchProcessing}
+      />
     </div>
   )
 }

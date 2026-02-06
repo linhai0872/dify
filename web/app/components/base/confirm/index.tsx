@@ -96,7 +96,8 @@ function Confirm({
       setIsVisible(true)
     }
     else {
-      const timer = setTimeout(() => setIsVisible(false), 200)
+      // [CUSTOM] Reduced from 200ms to 100ms for snappier close feel
+      const timer = setTimeout(() => setIsVisible(false), 100)
       return () => clearTimeout(timer)
     }
   }, [isShow])

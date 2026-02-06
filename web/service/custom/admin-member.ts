@@ -159,3 +159,35 @@ export const useRemoveWorkspaceMember = () => {
     },
   })
 }
+
+/**
+ * Create a new workspace.
+ */
+export const useCreateWorkspace = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ name }: { name: string }) =>
+      post<CommonResponse & { data: { id: string, name: string } }>('/custom/admin/workspaces', {
+        body: { name },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'workspaces'] })
+    },
+  })
+}
+
+/**
+ * Delete a workspace.
+ */
+export const useDeleteWorkspace = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ workspaceId }: { workspaceId: string }) =>
+      del<CommonResponse>(`/custom/admin/workspaces/${workspaceId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'workspaces'] })
+    },
+  })
+}

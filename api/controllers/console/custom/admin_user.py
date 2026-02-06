@@ -12,7 +12,7 @@ from controllers.console import console_ns
 from controllers.console.wraps import account_initialization_required, setup_required
 from custom.models.custom_account_ext import SystemRole
 from custom.services.custom_admin_user_service import CustomAdminUserService
-from custom.wraps.custom_permission_wraps import super_admin_required
+from custom.wraps.custom_permission_wraps import system_admin_required
 from libs.login import current_account_with_tenant, login_required
 
 
@@ -31,6 +31,18 @@ class UpdateSystemRolePayload(BaseModel):
 
 class UpdateUserStatusPayload(BaseModel):
     status: str = Field(..., description="New status: 'active' or 'banned'")
+
+
+class CreateUserPayload(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100, description="User's display name")
+    email: str = Field(..., description="User's email address")
+    password: str = Field(..., min_length=8, max_length=100, description="User's password")
+    system_role: str = Field(default="user", description="System role to assign")
+
+
+class BatchActionPayload(BaseModel):
+    user_ids: list[str] = Field(..., min_length=1, max_length=100, description="List of user IDs")
+    action: str = Field(..., description="Action to perform: 'enable', 'disable', or 'delete'")
 
 
 # Response fields
@@ -54,12 +66,12 @@ admin_user_detail_fields = {
 
 @console_ns.route("/custom/admin/users")
 class AdminUserListApi(Resource):
-    """API for listing all users (super_admin only)."""
+    """API for listing and creating users (system_admin only)."""
 
     @setup_required
     @login_required
     @account_initialization_required
-    @super_admin_required
+    @system_admin_required
     def get(self):
         """
         Get paginated list of all users.
@@ -68,7 +80,7 @@ class AdminUserListApi(Resource):
         - page: Page number (default 1)
         - limit: Items per page (default 20, max 100)
         - search: Search by name or email
-        - system_role: Filter by system role (super_admin/workspace_admin/normal)
+        - system_role: Filter by system role (system_admin/tenant_manager/user)
         - status: Filter by account status
         """
         args = AdminUserListQuery.model_validate(request.args.to_dict())
@@ -89,15 +101,48 @@ class AdminUserListApi(Resource):
             "has_more": (args.page * args.limit) < total,
         }, 200
 
+    @setup_required
+    @login_required
+    @account_initialization_required
+    @system_admin_required
+    def post(self):
+        """
+        Create a new user account.
+
+        Body:
+        - name: User's display name (required)
+        - email: User's email address (required)
+        - password: User's password (required, min 8 characters)
+        - system_role: System role to assign (default: user)
+        """
+        payload = request.get_json() or {}
+
+        try:
+            args = CreateUserPayload.model_validate(payload)
+        except Exception as e:
+            return {"error": str(e)}, 400
+
+        user, error = CustomAdminUserService.create_user(
+            name=args.name,
+            email=args.email,
+            password=args.password,
+            system_role=args.system_role,
+        )
+
+        if user is None:
+            return {"error": error}, 400
+
+        return {"data": user, "result": "success"}, 201
+
 
 @console_ns.route("/custom/admin/users/<string:user_id>")
 class AdminUserDetailApi(Resource):
-    """API for getting user details (super_admin only)."""
+    """API for getting and deleting user details (system_admin only)."""
 
     @setup_required
     @login_required
     @account_initialization_required
-    @super_admin_required
+    @system_admin_required
     def get(self, user_id: str):
         """Get user details by ID."""
         user = CustomAdminUserService.get_user_by_id(user_id)
@@ -107,21 +152,39 @@ class AdminUserDetailApi(Resource):
 
         return {"data": user}, 200
 
+    @setup_required
+    @login_required
+    @account_initialization_required
+    @system_admin_required
+    def delete(self, user_id: str):
+        """Delete a user account."""
+        current_user, _ = current_account_with_tenant()
+
+        success, error = CustomAdminUserService.delete_user(
+            user_id=user_id,
+            operator_id=current_user.id,
+        )
+
+        if not success:
+            return {"error": error}, 400
+
+        return {"result": "success"}, 200
+
 
 @console_ns.route("/custom/admin/users/<string:user_id>/role")
 class AdminUserRoleApi(Resource):
-    """API for updating user's system role (super_admin only)."""
+    """API for updating user's system role (system_admin only)."""
 
     @setup_required
     @login_required
     @account_initialization_required
-    @super_admin_required
+    @system_admin_required
     def put(self, user_id: str):
         """
         Update user's system role.
 
         Body:
-        - system_role: New system role (super_admin/workspace_admin/normal)
+        - system_role: New system role (system_admin/tenant_manager/user)
         """
         current_user, _ = current_account_with_tenant()
         payload = request.get_json() or {}
@@ -145,12 +208,12 @@ class AdminUserRoleApi(Resource):
 
 @console_ns.route("/custom/admin/users/<string:user_id>/status")
 class AdminUserStatusApi(Resource):
-    """API for updating user's account status (super_admin only)."""
+    """API for updating user's account status (system_admin only)."""
 
     @setup_required
     @login_required
     @account_initialization_required
-    @super_admin_required
+    @system_admin_required
     def put(self, user_id: str):
         """
         Update user's account status.
@@ -178,30 +241,68 @@ class AdminUserStatusApi(Resource):
         return {"result": "success"}, 200
 
 
-@console_ns.route("/custom/admin/system-roles")
-class AdminSystemRolesApi(Resource):
-    """API for listing available system roles (super_admin only)."""
+@console_ns.route("/custom/admin/users/batch")
+class AdminUserBatchApi(Resource):
+    """API for batch operations on users (system_admin only)."""
 
     @setup_required
     @login_required
     @account_initialization_required
-    @super_admin_required
+    @system_admin_required
+    def post(self):
+        """
+        Perform batch action on multiple users.
+
+        Body:
+        - user_ids: List of user IDs to operate on
+        - action: Action to perform ('enable', 'disable', 'delete')
+        """
+        current_user, _ = current_account_with_tenant()
+        payload = request.get_json() or {}
+
+        try:
+            args = BatchActionPayload.model_validate(payload)
+        except Exception as e:
+            return {"error": str(e)}, 400
+
+        processed, failed, errors = CustomAdminUserService.batch_update_status(
+            user_ids=args.user_ids,
+            action=args.action,
+            operator_id=current_user.id,
+        )
+
+        return {
+            "result": "success",
+            "processed": processed,
+            "failed": failed,
+            "errors": errors,
+        }, 200
+
+
+@console_ns.route("/custom/admin/system-roles")
+class AdminSystemRolesApi(Resource):
+    """API for listing available system roles (system_admin only)."""
+
+    @setup_required
+    @login_required
+    @account_initialization_required
+    @system_admin_required
     def get(self):
         """Get list of available system roles."""
         roles = [
             {
-                "value": SystemRole.SUPER_ADMIN.value,
-                "label": "Super Admin",
+                "value": SystemRole.SYSTEM_ADMIN.value,
+                "label": "System Admin",
                 "description": "Full system access, can manage all workspaces and users",
             },
             {
-                "value": SystemRole.WORKSPACE_ADMIN.value,
-                "label": "Workspace Admin",
-                "description": "Can manage assigned workspaces",
+                "value": SystemRole.TENANT_MANAGER.value,
+                "label": "Tenant Manager",
+                "description": "Can create and manage own workspaces",
             },
             {
-                "value": SystemRole.NORMAL.value,
-                "label": "Normal",
+                "value": SystemRole.USER.value,
+                "label": "User",
                 "description": "Standard user with no special system permissions",
             },
         ]
@@ -231,14 +332,14 @@ class CurrentUserSystemRoleApi(Resource):
 
         if not DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED:
             return {
-                "system_role": SystemRole.NORMAL.value,
+                "system_role": SystemRole.USER.value,
                 "multi_workspace_permission_enabled": False,
             }, 200
 
         system_role = CustomSystemPermissionService.get_system_role(current_user)
 
         return {
-            "system_role": system_role.value if system_role else SystemRole.NORMAL.value,
+            "system_role": system_role.value if system_role else SystemRole.USER.value,
             "multi_workspace_permission_enabled": True,
         }, 200
 
