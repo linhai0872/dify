@@ -14,18 +14,30 @@ type Props = {
   periodMapping: { [key: string]: { value: number, name: TimePeriodName } }
   onSelect: (payload: PeriodParams) => void
   queryDateFormat: string
+  // [CUSTOM] 二开: 受控选中值，用于日期时间选择器联动
+  selectedValue?: string
+  // [/CUSTOM]
 }
 
 const today = dayjs()
+
+// [CUSTOM] 二开: 自定义范围选项 key
+const CUSTOM_VALUE = 'custom'
+// [/CUSTOM]
 
 const LongTimeRangePicker: FC<Props> = ({
   periodMapping,
   onSelect,
   queryDateFormat,
+  selectedValue, // [CUSTOM]
 }) => {
   const { t } = useTranslation()
 
   const handleSelect = React.useCallback((item: Item) => {
+    // [CUSTOM] 二开: 忽略自定义范围选项的点击（它只是显示用）
+    if (item.value === CUSTOM_VALUE)
+      return
+    // [/CUSTOM]
     const id = item.value
     const value = periodMapping[id]?.value ?? '-1'
     const name = item.name || t('filter.period.allTime', { ns: 'appLog' })
@@ -54,13 +66,35 @@ const LongTimeRangePicker: FC<Props> = ({
     }
   }, [onSelect, periodMapping, queryDateFormat, t])
 
+  // [CUSTOM] 二开: 构建选项列表，当处于自定义范围模式时追加选项
+  const isCustom = selectedValue === CUSTOM_VALUE
+  const items = React.useMemo(() => {
+    const baseItems = Object.entries(periodMapping).map(([k, v]) => ({
+      value: k,
+      name: t(`filter.period.${v.name}`, { ns: 'appLog' }),
+    }))
+    if (isCustom) {
+      baseItems.push({
+        value: CUSTOM_VALUE,
+        name: t('overview.dateTimeRange.custom', { ns: 'custom' }),
+      })
+    }
+    return baseItems
+  }, [periodMapping, t, isCustom])
+
+  const defaultVal = isCustom ? CUSTOM_VALUE : '2'
+  // [/CUSTOM]
+
   return (
     <SimpleSelect
-      items={Object.entries(periodMapping).map(([k, v]) => ({ value: k, name: t(`filter.period.${v.name}`, { ns: 'appLog' }) }))}
+      // [CUSTOM] 二开: key 强制重置以同步受控值
+      key={defaultVal}
+      // [/CUSTOM]
+      items={items}
       className="mt-0 !w-40"
       notClearable={true}
       onSelect={handleSelect}
-      defaultValue="2"
+      defaultValue={defaultVal}
     />
   )
 }

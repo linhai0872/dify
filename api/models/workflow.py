@@ -2,6 +2,7 @@ import json
 import logging
 from collections.abc import Generator, Mapping, Sequence
 from datetime import datetime
+from decimal import Decimal
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Optional, Union, cast
 from uuid import uuid4
@@ -624,6 +625,12 @@ class WorkflowRun(Base):
     error: Mapped[str | None] = mapped_column(LongText)
     elapsed_time: Mapped[float] = mapped_column(sa.Float, nullable=False, server_default=sa.text("0"))
     total_tokens: Mapped[int] = mapped_column(sa.BigInteger, server_default=sa.text("0"))
+    # [CUSTOM] 二开: Workflow 费用统计
+    custom_total_price: Mapped[Decimal] = mapped_column(
+        sa.Numeric(precision=10, scale=7), server_default=sa.text("0"), nullable=False
+    )
+    custom_currency: Mapped[str] = mapped_column(String(255), server_default="USD", nullable=False)
+    # [/CUSTOM]
     total_steps: Mapped[int] = mapped_column(sa.Integer, server_default=sa.text("0"), nullable=True)
     created_by_role: Mapped[CreatorUserRole] = mapped_column(EnumText(CreatorUserRole, length=255))  # account, end_user
     created_by: Mapped[str] = mapped_column(StringUUID, nullable=False)

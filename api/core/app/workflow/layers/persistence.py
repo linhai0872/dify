@@ -343,6 +343,10 @@ class WorkflowPersistenceLayer(GraphEngineLayer):
             execution.finished_at = naive_utc_now()
         runtime_state = self.graph_runtime_state
         execution.total_tokens = runtime_state.total_tokens
+        # [CUSTOM] 二开: 写入 workflow 费用
+        execution.custom_total_price = runtime_state.llm_usage.total_price
+        execution.custom_currency = runtime_state.llm_usage.currency
+        # [/CUSTOM]
         execution.total_steps = runtime_state.node_run_steps
         execution.outputs = execution.outputs or runtime_state.outputs
         execution.exceptions_count = runtime_state.exceptions_count
