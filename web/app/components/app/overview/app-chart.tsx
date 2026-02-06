@@ -72,6 +72,7 @@ const CHART_TYPE_CONFIG: Record<string, IChartConfigType> = {
   },
   workflowCosts: {
     colorType: 'blue',
+    showTokens: true, // [CUSTOM] 二开: 启用 workflow 费用显示
   },
 }
 
