@@ -21,7 +21,7 @@ class CustomSystemPermissionService:
         """
         Get the system role of an account.
 
-        If the feature flag is disabled, returns NORMAL for all users.
+        If the feature flag is disabled, returns USER for all users.
 
         Args:
             account: The account to check
@@ -30,27 +30,52 @@ class CustomSystemPermissionService:
             The account's SystemRole
         """
         if not DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED:
-            return SystemRole.NORMAL
+            return SystemRole.USER
 
         # Get system_role from database
-        # Note: system_role field will be added by migration
-        system_role_str = getattr(account, "system_role", "normal")
+        system_role_str = getattr(account, "system_role", "user")
         if system_role_str and SystemRole.is_valid_role(system_role_str):
             return SystemRole(system_role_str)
-        return SystemRole.NORMAL
+        return SystemRole.USER
 
     @staticmethod
-    def is_super_admin(account: Account) -> bool:
+    def is_system_admin(account: Account) -> bool:
         """
-        Check if an account has super_admin system role.
+        Check if an account has system_admin system role.
 
         Args:
             account: The account to check
 
         Returns:
-            True if the account is a super_admin, False otherwise
+            True if the account is a system_admin, False otherwise
         """
-        return CustomSystemPermissionService.get_system_role(account) == SystemRole.SUPER_ADMIN
+        return CustomSystemPermissionService.get_system_role(account) == SystemRole.SYSTEM_ADMIN
+
+    @staticmethod
+    def is_super_admin(account: Account) -> bool:
+        """
+        Alias for is_system_admin (deprecated, use is_system_admin instead).
+
+        Args:
+            account: The account to check
+
+        Returns:
+            True if the account is a system_admin, False otherwise
+        """
+        return CustomSystemPermissionService.is_system_admin(account)
+
+    @staticmethod
+    def is_tenant_manager(account: Account) -> bool:
+        """
+        Check if an account has tenant_manager system role.
+
+        Args:
+            account: The account to check
+
+        Returns:
+            True if the account is a tenant_manager, False otherwise
+        """
+        return CustomSystemPermissionService.get_system_role(account) == SystemRole.TENANT_MANAGER
 
     @staticmethod
     def can_access_all_workspaces(account: Account) -> bool:
@@ -204,6 +229,47 @@ class CustomSystemPermissionService:
         return TenantAccountRole(taj.role) if taj else None
 
     @staticmethod
+    def can_create_workspace(account: Account) -> bool:
+        """
+        Check if an account can create new workspaces.
+
+        system_admin and tenant_manager can create workspaces.
+
+        Args:
+            account: The account to check
+
+        Returns:
+            True if the account can create workspaces
+        """
+        if not DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED:
+            return True  # Default behavior when feature disabled
+        return SystemRole.can_create_workspace(
+            CustomSystemPermissionService.get_system_role(account)
+        )
+
+    @staticmethod
+    def can_delete_workspace(account: Account, workspace_creator_id: Optional[str] = None) -> bool:
+        """
+        Check if an account can delete a specific workspace.
+
+        system_admin can delete any workspace.
+        tenant_manager can only delete workspaces they created.
+
+        Args:
+            account: The account to check
+            workspace_creator_id: The ID of the user who created the workspace
+
+        Returns:
+            True if the account can delete the workspace
+        """
+        if not DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED:
+            return True  # Default behavior when feature disabled
+
+        role = CustomSystemPermissionService.get_system_role(account)
+        is_creator = workspace_creator_id is not None and str(account.id) == str(workspace_creator_id)
+        return SystemRole.can_delete_workspace(role, is_creator)
+
+    @staticmethod
     def update_system_role(account_id: str, new_role: SystemRole) -> bool:
         """
         Update an account's system role.
@@ -222,7 +288,7 @@ class CustomSystemPermissionService:
         if not account:
             return False
 
-        # Update system_role (will work after migration adds the field)
+        # Update system_role
         account.system_role = new_role.value
         db.session.commit()
         return True

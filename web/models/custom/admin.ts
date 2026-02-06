@@ -4,11 +4,17 @@
 
 /**
  * System-level role for multi-workspace permission control.
- * - super_admin: Can view all workspaces, manage all users, assign members to any workspace
- * - workspace_admin: Reserved for future use (currently same as normal)
- * - normal: Default role, can only access joined workspaces
+ * - system_admin: Can view all workspaces, manage all users, assign members to any workspace
+ * - tenant_manager: Can create and manage own workspaces
+ * - user: Default role, can only access joined workspaces
  */
-export type SystemRole = 'super_admin' | 'workspace_admin' | 'normal'
+export type SystemRole = 'system_admin' | 'tenant_manager' | 'user'
+
+/**
+ * Legacy system role names for backward compatibility.
+ * @deprecated Use SystemRole instead
+ */
+export type LegacySystemRole = 'super_admin' | 'workspace_admin' | 'normal'
 
 /**
  * Workspace-level role.
@@ -76,12 +82,22 @@ export type AdminMember = {
 }
 
 /**
+ * Workspace info in member list response.
+ */
+export type AdminWorkspaceInfo = {
+  id: string
+  name: string
+  status: string
+  created_at: number | string | null
+}
+
+/**
  * Workspace member list response.
  */
 export type AdminMemberListResponse = {
   data: AdminMember[]
   total: number
-  workspace_name?: string
+  workspace: AdminWorkspaceInfo
 }
 
 /**
@@ -130,6 +146,8 @@ export type AdminWorkspace = {
   status: string
   created_at: number
   member_count: number
+  is_default?: boolean // Default (first created) workspace cannot be deleted
+  created_by?: string // Creator user ID for tenant_manager permission check
 }
 
 /**
@@ -145,4 +163,40 @@ export type AdminWorkspaceListResponse = {
  */
 export type CustomFeatureFlagsResponse = {
   multi_workspace_permission_enabled: boolean
+}
+
+/**
+ * Create user request body.
+ */
+export type CreateUserRequest = {
+  name: string
+  email: string
+  password: string
+  system_role?: SystemRole
+}
+
+/**
+ * Create workspace request body.
+ */
+export type CreateWorkspaceRequest = {
+  name: string
+  owner_id?: string
+}
+
+/**
+ * Batch user action request body.
+ */
+export type BatchUserActionRequest = {
+  user_ids: string[]
+  action: 'enable' | 'disable' | 'delete'
+}
+
+/**
+ * Batch action response.
+ */
+export type BatchActionResponse = {
+  success: boolean
+  processed: number
+  failed: number
+  errors?: Array<{ id: string, error: string }>
 }

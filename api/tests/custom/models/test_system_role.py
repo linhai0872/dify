@@ -15,9 +15,9 @@ class TestSystemRoleEnum:
 
     def test_enum_values(self):
         """Test that enum has expected values."""
-        assert SystemRole.SUPER_ADMIN == "super_admin"
-        assert SystemRole.WORKSPACE_ADMIN == "workspace_admin"
-        assert SystemRole.NORMAL == "normal"
+        assert SystemRole.SYSTEM_ADMIN == "system_admin"
+        assert SystemRole.TENANT_MANAGER == "tenant_manager"
+        assert SystemRole.USER == "user"
 
     def test_enum_count(self):
         """Test that there are exactly 3 system roles."""
@@ -30,12 +30,12 @@ class TestIsValidRole:
     @pytest.mark.parametrize(
         ("role", "expected"),
         [
-            ("super_admin", True),
-            ("workspace_admin", True),
-            ("normal", True),
-            (SystemRole.SUPER_ADMIN, True),
-            (SystemRole.WORKSPACE_ADMIN, True),
-            (SystemRole.NORMAL, True),
+            ("system_admin", True),
+            ("tenant_manager", True),
+            ("user", True),
+            (SystemRole.SYSTEM_ADMIN, True),
+            (SystemRole.TENANT_MANAGER, True),
+            (SystemRole.USER, True),
         ],
     )
     def test_valid_roles(self, role: str, expected: bool):
@@ -51,8 +51,8 @@ class TestIsValidRole:
             "invalid",
             "",
             None,
-            "SUPER_ADMIN",  # Case sensitive
-            "Super_Admin",
+            "SYSTEM_ADMIN",  # Case sensitive
+            "System_Admin",
         ],
     )
     def test_invalid_roles(self, role):
@@ -60,38 +60,38 @@ class TestIsValidRole:
         assert SystemRole.is_valid_role(role) is False
 
 
-class TestIsSuperAdmin:
-    """Tests for is_super_admin static method."""
+class TestIsSystemAdmin:
+    """Tests for is_system_admin static method."""
 
-    def test_super_admin_role(self):
-        """Test that super_admin role returns True."""
-        assert SystemRole.is_super_admin(SystemRole.SUPER_ADMIN) is True
+    def test_system_admin_role(self):
+        """Test that system_admin role returns True."""
+        assert SystemRole.is_system_admin(SystemRole.SYSTEM_ADMIN) is True
 
     @pytest.mark.parametrize(
         "role",
         [
-            SystemRole.WORKSPACE_ADMIN,
-            SystemRole.NORMAL,
+            SystemRole.TENANT_MANAGER,
+            SystemRole.USER,
             None,
         ],
     )
-    def test_non_super_admin_roles(self, role):
-        """Test that non-super_admin roles return False."""
-        assert SystemRole.is_super_admin(role) is False
+    def test_non_system_admin_roles(self, role):
+        """Test that non-system_admin roles return False."""
+        assert SystemRole.is_system_admin(role) is False
 
 
 class TestCanAccessAllWorkspaces:
     """Tests for can_access_all_workspaces static method."""
 
-    def test_super_admin_can_access_all(self):
-        """Test that super_admin can access all workspaces."""
-        assert SystemRole.can_access_all_workspaces(SystemRole.SUPER_ADMIN) is True
+    def test_system_admin_can_access_all(self):
+        """Test that system_admin can access all workspaces."""
+        assert SystemRole.can_access_all_workspaces(SystemRole.SYSTEM_ADMIN) is True
 
     @pytest.mark.parametrize(
         "role",
         [
-            SystemRole.WORKSPACE_ADMIN,
-            SystemRole.NORMAL,
+            SystemRole.TENANT_MANAGER,
+            SystemRole.USER,
             None,
         ],
     )
@@ -103,15 +103,15 @@ class TestCanAccessAllWorkspaces:
 class TestCanManageUsers:
     """Tests for can_manage_users static method."""
 
-    def test_super_admin_can_manage_users(self):
-        """Test that super_admin can manage users."""
-        assert SystemRole.can_manage_users(SystemRole.SUPER_ADMIN) is True
+    def test_system_admin_can_manage_users(self):
+        """Test that system_admin can manage users."""
+        assert SystemRole.can_manage_users(SystemRole.SYSTEM_ADMIN) is True
 
     @pytest.mark.parametrize(
         "role",
         [
-            SystemRole.WORKSPACE_ADMIN,
-            SystemRole.NORMAL,
+            SystemRole.TENANT_MANAGER,
+            SystemRole.USER,
             None,
         ],
     )
@@ -123,15 +123,15 @@ class TestCanManageUsers:
 class TestCanAssignMembers:
     """Tests for can_assign_members static method."""
 
-    def test_super_admin_can_assign_members(self):
-        """Test that super_admin can assign members to workspaces."""
-        assert SystemRole.can_assign_members(SystemRole.SUPER_ADMIN) is True
+    def test_system_admin_can_assign_members(self):
+        """Test that system_admin can assign members to workspaces."""
+        assert SystemRole.can_assign_members(SystemRole.SYSTEM_ADMIN) is True
 
     @pytest.mark.parametrize(
         "role",
         [
-            SystemRole.WORKSPACE_ADMIN,
-            SystemRole.NORMAL,
+            SystemRole.TENANT_MANAGER,
+            SystemRole.USER,
             None,
         ],
     )

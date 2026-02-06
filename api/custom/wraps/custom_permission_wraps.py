@@ -19,18 +19,18 @@ P = ParamSpec("P")
 R = TypeVar("R")
 
 
-def super_admin_required(view: Callable[P, R]) -> Callable[P, R]:
+def system_admin_required(view: Callable[P, R]) -> Callable[P, R]:
     """
-    Decorator to require super_admin system role for an endpoint.
+    Decorator to require system_admin system role for an endpoint.
 
     Usage:
-        @super_admin_required
+        @system_admin_required
         def my_admin_endpoint():
-            # Only super_admin can access this
+            # Only system_admin can access this
             pass
 
     If the feature flag is disabled, returns 404 (feature not available).
-    If the user is not a super_admin, returns 403 Forbidden.
+    If the user is not a system_admin, returns 403 Forbidden.
     """
 
     @wraps(view)
@@ -42,9 +42,48 @@ def super_admin_required(view: Callable[P, R]) -> Callable[P, R]:
         # Get current user
         current_user, _ = current_account_with_tenant()
 
-        # Check if user is super_admin
-        if not CustomSystemPermissionService.is_super_admin(current_user):
-            abort(403, description="Super admin permission required")
+        # Check if user is system_admin
+        if not CustomSystemPermissionService.is_system_admin(current_user):
+            abort(403, description="System admin permission required")
+
+        return view(*args, **kwargs)
+
+    return decorated
+
+
+# Backward compatibility alias
+super_admin_required = system_admin_required
+
+
+def tenant_manager_or_admin_required(view: Callable[P, R]) -> Callable[P, R]:
+    """
+    Decorator to require tenant_manager or system_admin role for an endpoint.
+
+    Usage:
+        @tenant_manager_or_admin_required
+        def my_workspace_endpoint():
+            # tenant_manager and system_admin can access this
+            pass
+
+    If the feature flag is disabled, returns 404 (feature not available).
+    If the user is not a tenant_manager or system_admin, returns 403 Forbidden.
+    """
+
+    @wraps(view)
+    def decorated(*args: P.args, **kwargs: P.kwargs) -> R:
+        # Check if feature is enabled
+        if not DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED:
+            abort(404, description="Feature not available")
+
+        # Get current user
+        current_user, _ = current_account_with_tenant()
+
+        # Check if user is system_admin or tenant_manager
+        if not (
+            CustomSystemPermissionService.is_system_admin(current_user)
+            or CustomSystemPermissionService.is_tenant_manager(current_user)
+        ):
+            abort(403, description="Tenant manager or system admin permission required")
 
         return view(*args, **kwargs)
 
@@ -56,7 +95,7 @@ def feature_enabled_required(view: Callable[P, R]) -> Callable[P, R]:
     Decorator to require the multi-workspace permission feature to be enabled.
 
     Use this for endpoints that should only be available when the feature is on,
-    but don't require super_admin permissions.
+    but don't require system_admin permissions.
 
     If the feature flag is disabled, returns 404 (feature not available).
     """

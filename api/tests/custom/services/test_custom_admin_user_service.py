@@ -20,7 +20,7 @@ class TestUpdateSystemRole:
         """When feature is disabled, returns False."""
         success, error = CustomAdminUserService.update_system_role(
             user_id="user-1",
-            new_role=SystemRole.SUPER_ADMIN,
+            new_role=SystemRole.SYSTEM_ADMIN,
             operator_id="operator-1",
         )
 
@@ -48,7 +48,7 @@ class TestUpdateSystemRole:
 
         success, error = CustomAdminUserService.update_system_role(
             user_id="nonexistent",
-            new_role=SystemRole.NORMAL,
+            new_role=SystemRole.USER,
             operator_id="operator-1",
         )
 
@@ -57,40 +57,40 @@ class TestUpdateSystemRole:
 
     @patch("custom.services.custom_admin_user_service.DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED", True)
     @patch("custom.services.custom_admin_user_service.db")
-    def test_prevents_self_demotion_from_super_admin(self, mock_db):
-        """Cannot demote yourself from super_admin."""
+    def test_prevents_self_demotion_from_system_admin(self, mock_db):
+        """Cannot demote yourself from system_admin."""
         mock_user = MagicMock()
         mock_user.id = "user-1"
-        mock_user.system_role = SystemRole.SUPER_ADMIN
+        mock_user.system_role = SystemRole.SYSTEM_ADMIN
         mock_db.session.query.return_value.filter.return_value.first.return_value = mock_user
 
         success, error = CustomAdminUserService.update_system_role(
             user_id="user-1",
-            new_role=SystemRole.NORMAL,
+            new_role=SystemRole.USER,
             operator_id="user-1",  # Same as user_id
         )
 
         assert success is False
-        assert "Cannot demote yourself" in error
+        assert "Cannot change your own system_admin role" in error
 
     @patch("custom.services.custom_admin_user_service.DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED", True)
     @patch("custom.services.custom_admin_user_service.db")
     def test_allows_promoting_other_user(self, mock_db):
-        """Can promote another user to super_admin."""
+        """Can promote another user to system_admin."""
         mock_user = MagicMock()
         mock_user.id = "user-2"
-        mock_user.system_role = SystemRole.NORMAL
+        mock_user.system_role = SystemRole.USER
         mock_db.session.query.return_value.filter.return_value.first.return_value = mock_user
 
         success, error = CustomAdminUserService.update_system_role(
             user_id="user-2",
-            new_role=SystemRole.SUPER_ADMIN,
+            new_role=SystemRole.SYSTEM_ADMIN,
             operator_id="user-1",  # Different from user_id
         )
 
         assert success is True
         assert error == ""
-        assert mock_user.system_role == SystemRole.SUPER_ADMIN
+        assert mock_user.system_role == SystemRole.SYSTEM_ADMIN
         mock_db.session.commit.assert_called_once()
 
 
@@ -188,7 +188,7 @@ class TestBuildUserDict:
         mock_user.email = "test@example.com"
         mock_user.avatar = "avatar.png"
         mock_user.status = "active"
-        mock_user.system_role = "normal"
+        mock_user.system_role = "user"
         mock_user.last_login_at = None
         mock_user.last_active_at = None
         mock_user.created_at = None
@@ -198,10 +198,10 @@ class TestBuildUserDict:
         assert result["id"] == "user-1"
         assert result["name"] == "Test User"
         assert result["email"] == "test@example.com"
-        assert result["system_role"] == "normal"
+        assert result["system_role"] == "user"
 
-    def test_defaults_to_normal_when_system_role_missing(self):
-        """Defaults to 'normal' when system_role attribute is missing."""
+    def test_defaults_to_user_when_system_role_missing(self):
+        """Defaults to 'user' when system_role attribute is missing."""
         mock_user = MagicMock(spec=["id", "name", "email", "avatar", "status",
                                      "last_login_at", "last_active_at", "created_at"])
         mock_user.id = "user-1"
@@ -215,4 +215,4 @@ class TestBuildUserDict:
 
         result = CustomAdminUserService._build_user_dict(mock_user)
 
-        assert result["system_role"] == "normal"
+        assert result["system_role"] == "user"

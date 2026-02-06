@@ -4,20 +4,19 @@
  * [CUSTOM] Workspace member management page for multi-workspace permission control.
  *
  * Features:
- * - List workspace members
+ * - List workspace members with skeleton loading
  * - Add members to workspace
  * - Modify member roles
  * - Remove members from workspace
+ * - Toast feedback on all mutations
  */
 
-import type { RoleOption } from '@/app/components/custom/admin'
+import type { BreadcrumbItem, RoleOption } from '@/app/components/custom/admin'
 import type { WorkspaceRole } from '@/models/custom/admin'
 import {
-  RiArrowLeftLine,
-  RiLoader4Line,
   RiUserAddLine,
+  RiUserLine,
 } from '@remixicon/react'
-import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -26,7 +25,8 @@ import Button from '@/app/components/base/button'
 import Confirm from '@/app/components/base/confirm'
 import Modal from '@/app/components/base/modal'
 import SearchInput from '@/app/components/base/search-input'
-import { AdminPageHeader, RoleOperation } from '@/app/components/custom/admin'
+import Toast from '@/app/components/base/toast'
+import { AdminBreadcrumb, AdminEmptyState, AdminPageHeader, AdminTableSkeleton, RoleOperation } from '@/app/components/custom/admin'
 import {
   useAddWorkspaceMember,
   useAvailableUsers,
@@ -36,6 +36,8 @@ import {
   useWorkspaceRoles,
 } from '@/service/custom/admin-member'
 import { cn } from '@/utils/classnames'
+import { getWorkspaceRoleLabel, getWorkspaceRoleTip } from '@/utils/custom/admin-labels'
+import { formatDate } from '@/utils/custom/format-date'
 
 export default function WorkspaceMembersPage() {
   const { t } = useTranslation()
@@ -47,7 +49,6 @@ export default function WorkspaceMembersPage() {
   const [selectedUserId, setSelectedUserId] = useState('')
   const [selectedRole, setSelectedRole] = useState<WorkspaceRole>('normal')
 
-  // Confirm dialog state
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
   const [memberToRemove, setMemberToRemove] = useState<{ id: string, name: string } | null>(null)
 
@@ -59,8 +60,7 @@ export default function WorkspaceMembersPage() {
   const { mutate: updateRole, isPending: isUpdatingRole } = useUpdateMemberRole()
   const { mutate: removeMember, isPending: isRemoving } = useRemoveWorkspaceMember()
 
-  // Get workspace name from response or use ID as fallback
-  const workspaceName = membersData?.workspace_name || workspaceId
+  const workspaceName = membersData?.workspace?.name || workspaceId
 
   const handleAddMember = useCallback(() => {
     if (!selectedUserId || !selectedRole)
@@ -74,14 +74,19 @@ export default function WorkspaceMembersPage() {
           setSelectedUserId('')
           setSelectedRole('normal')
           setUserSearch('')
+          Toast.notify({ type: 'success', message: t('admin.memberAddSuccess', { ns: 'custom' }) })
         },
+        onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
       },
     )
-  }, [workspaceId, selectedUserId, selectedRole, addMember])
+  }, [workspaceId, selectedUserId, selectedRole, addMember, t])
 
   const handleRoleChange = useCallback((userId: string, role: WorkspaceRole) => {
-    updateRole({ workspaceId, userId, role })
-  }, [workspaceId, updateRole])
+    updateRole({ workspaceId, userId, role }, {
+      onSuccess: () => Toast.notify({ type: 'success', message: t('admin.memberRoleUpdateSuccess', { ns: 'custom' }) }),
+      onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+    })
+  }, [workspaceId, updateRole, t])
 
   const handleRemoveClick = useCallback((userId: string, name: string) => {
     setMemberToRemove({ id: userId, name })
@@ -90,70 +95,37 @@ export default function WorkspaceMembersPage() {
 
   const handleConfirmRemove = useCallback(() => {
     if (memberToRemove) {
-      removeMember({ workspaceId, userId: memberToRemove.id })
-      setShowRemoveConfirm(false)
-      setMemberToRemove(null)
+      removeMember({ workspaceId, userId: memberToRemove.id }, {
+        onSuccess: () => {
+          setShowRemoveConfirm(false)
+          setMemberToRemove(null)
+          Toast.notify({ type: 'success', message: t('admin.memberRemoveSuccess', { ns: 'custom' }) })
+        },
+        onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+      })
     }
-  }, [workspaceId, memberToRemove, removeMember])
+  }, [workspaceId, memberToRemove, removeMember, t])
 
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'owner':
-        return t('admin.workspaceRole.owner', { ns: 'custom' })
-      case 'admin':
-        return t('admin.workspaceRole.admin', { ns: 'custom' })
-      case 'editor':
-        return t('admin.workspaceRole.editor', { ns: 'custom' })
-      case 'normal':
-        return t('admin.workspaceRole.normal', { ns: 'custom' })
-      case 'dataset_operator':
-        return t('admin.workspaceRole.datasetOperator', { ns: 'custom' })
-      default:
-        return role
-    }
-  }
-
-  const getRoleTip = (role: string) => {
-    switch (role) {
-      case 'owner':
-        return t('admin.workspaceRole.ownerTip', { ns: 'custom' })
-      case 'admin':
-        return t('admin.workspaceRole.adminTip', { ns: 'custom' })
-      case 'editor':
-        return t('admin.workspaceRole.editorTip', { ns: 'custom' })
-      case 'normal':
-        return t('admin.workspaceRole.normalTip', { ns: 'custom' })
-      case 'dataset_operator':
-        return t('admin.workspaceRole.datasetOperatorTip', { ns: 'custom' })
-      default:
-        return ''
-    }
-  }
-
-  // Build role options for dropdown with descriptions
   const workspaceRolesWithTips: RoleOption[] = useMemo(() => {
     return (rolesData?.roles || []).map(role => ({
       value: role.value,
-      label: getRoleLabel(role.value),
-      description: getRoleTip(role.value),
+      label: getWorkspaceRoleLabel(role.value, t),
+      description: getWorkspaceRoleTip(role.value, t),
     }))
   }, [rolesData?.roles, t])
 
-  // Count owners for last owner protection
   const ownerCount = membersData?.data?.filter(m => m.role === 'owner').length || 0
+
+  const breadcrumbItems: BreadcrumbItem[] = useMemo(() => [
+    { label: t('admin.systemAdmin', { ns: 'custom' }), href: '/custom-admin/users' },
+    { label: t('admin.workspaceManagement', { ns: 'custom' }), href: '/custom-admin/workspaces' },
+    { label: workspaceName },
+  ], [t, workspaceName])
 
   return (
     <div className="flex h-full flex-col">
-      {/* Back Link */}
-      <Link
-        href="/custom-admin/workspaces"
-        className="mb-3 inline-flex w-fit items-center gap-1 text-sm text-text-tertiary hover:text-text-secondary"
-      >
-        <RiArrowLeftLine className="h-4 w-4" />
-        {t('admin.backToWorkspaces', { ns: 'custom' })}
-      </Link>
+      <AdminBreadcrumb items={breadcrumbItems} className="mb-3" />
 
-      {/* Header Card */}
       <AdminPageHeader
         icon={workspaceName[0]?.toUpperCase() || 'W'}
         title={workspaceName}
@@ -165,10 +137,17 @@ export default function WorkspaceMembersPage() {
           </Button>
         )}
       />
+      {/* Workspace ID for reference */}
+      {membersData?.workspace && (
+        <div className="system-xs-regular mb-3 text-text-quaternary">
+          ID:
+          {' '}
+          {workspaceId}
+        </div>
+      )}
 
       {/* Members Table */}
       <div className="flex-1 overflow-auto rounded-xl border border-divider-subtle bg-components-panel-bg">
-        {/* Table Header */}
         <div className="flex min-w-[600px] items-center border-b border-divider-regular bg-background-section-burn py-[7px]">
           <div className="system-xs-medium-uppercase grow px-4 text-text-tertiary">
             {t('admin.member', { ns: 'custom' })}
@@ -184,37 +163,33 @@ export default function WorkspaceMembersPage() {
           </div>
         </div>
 
-        {/* Table Body */}
         <div className="min-w-[600px]">
           {isLoading
-            ? (
-                <div className="flex items-center justify-center py-12">
-                  <RiLoader4Line className="h-6 w-6 animate-spin text-text-tertiary" />
-                </div>
-              )
+            ? <AdminTableSkeleton rows={5} columns={3} />
             : membersData?.data?.length === 0
               ? (
-                  <div className="system-sm-regular py-12 text-center text-text-tertiary">
-                    {t('admin.noMembersFound', { ns: 'custom' })}
-                  </div>
+                  <AdminEmptyState
+                    icon={<RiUserLine className="size-6" />}
+                    title={t('admin.noMembersFound', { ns: 'custom' })}
+                    description={t('admin.addMemberHint', { ns: 'custom' })}
+                    action={(
+                      <Button variant="primary" onClick={() => setShowAddModal(true)}>
+                        <RiUserAddLine className="mr-1 size-4" />
+                        {t('admin.addMember', { ns: 'custom' })}
+                      </Button>
+                    )}
+                  />
                 )
               : (
                   membersData?.data?.map(member => (
                     <div key={member.id} className="flex border-b border-divider-subtle transition-colors hover:bg-state-base-hover">
-                      {/* Member Info */}
                       <div className="flex grow items-center px-4 py-2">
                         <Avatar avatar={member.avatar_url} name={member.name} size={32} className="mr-3" />
                         <div className="min-w-0">
-                          <div className="system-sm-medium truncate text-text-secondary">
-                            {member.name}
-                          </div>
-                          <div className="system-xs-regular truncate text-text-tertiary">
-                            {member.email}
-                          </div>
+                          <div className="system-sm-medium truncate text-text-secondary">{member.name}</div>
+                          <div className="system-xs-regular truncate text-text-tertiary">{member.email}</div>
                         </div>
                       </div>
-
-                      {/* Role */}
                       <div className="flex w-[140px] shrink-0 items-center">
                         <RoleOperation
                           currentRole={member.role}
@@ -223,17 +198,9 @@ export default function WorkspaceMembersPage() {
                           disabled={isUpdatingRole || (member.role === 'owner' && ownerCount <= 1)}
                         />
                       </div>
-
-                      {/* Joined Date */}
                       <div className="flex w-[120px] shrink-0 items-center">
-                        <span className="system-sm-regular text-text-tertiary">
-                          {member.joined_at
-                            ? new Date(member.joined_at * 1000).toLocaleDateString()
-                            : '-'}
-                        </span>
+                        <span className="system-sm-regular text-text-tertiary">{formatDate(member.joined_at)}</span>
                       </div>
-
-                      {/* Actions */}
                       <div className="flex w-[100px] shrink-0 items-center px-3">
                         <Button
                           variant="warning"
@@ -258,7 +225,6 @@ export default function WorkspaceMembersPage() {
         closable
       >
         <div className="mt-4">
-          {/* User Search */}
           <div className="mb-4">
             <label className="system-sm-medium mb-2 block text-text-secondary">
               {t('admin.selectUser', { ns: 'custom' })}
@@ -268,7 +234,6 @@ export default function WorkspaceMembersPage() {
               value={userSearch}
               onChange={setUserSearch}
             />
-            {/* User List */}
             <div className="mt-2 max-h-40 overflow-auto rounded-lg border border-divider-subtle">
               {availableUsersData?.data?.length === 0
                 ? (
@@ -283,7 +248,7 @@ export default function WorkspaceMembersPage() {
                         onClick={() => setSelectedUserId(user.id)}
                         className={cn(
                           'flex cursor-pointer items-center gap-2 px-3 py-2 hover:bg-state-base-hover',
-                          selectedUserId === user.id && 'bg-state-accent-hover',
+                          selectedUserId === user.id && 'bg-state-accent-hover ring-1 ring-inset ring-components-input-border-active',
                         )}
                       >
                         <Avatar avatar={user.avatar_url} name={user.name} size={24} />
@@ -297,7 +262,6 @@ export default function WorkspaceMembersPage() {
             </div>
           </div>
 
-          {/* Role Selection */}
           <div className="mb-6">
             <label className="system-sm-medium mb-2 block text-text-secondary">
               {t('admin.selectRole', { ns: 'custom' })}
@@ -308,8 +272,8 @@ export default function WorkspaceMembersPage() {
                   key={role.value}
                   onClick={() => setSelectedRole(role.value as WorkspaceRole)}
                   className={cn(
-                    'cursor-pointer rounded-lg px-3 py-2 hover:bg-state-base-hover',
-                    selectedRole === role.value && 'bg-state-accent-hover',
+                    'cursor-pointer rounded-lg px-3 py-2 transition-colors hover:bg-state-base-hover',
+                    selectedRole === role.value && 'bg-state-accent-hover ring-1 ring-inset ring-components-input-border-active',
                   )}
                 >
                   <div className="system-sm-medium text-text-secondary">{role.label}</div>
@@ -321,7 +285,6 @@ export default function WorkspaceMembersPage() {
             </div>
           </div>
 
-          {/* Actions */}
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setShowAddModal(false)}>
               {t('admin.cancel', { ns: 'custom' })}

@@ -11,7 +11,7 @@ import type {
   SystemRoleOption,
 } from '@/models/custom/admin'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { del, get, put } from '../base'
+import { del, get, post, put } from '../base'
 
 const NAME_SPACE = 'custom-admin'
 
@@ -80,6 +80,41 @@ export const useSystemRoles = () => {
 }
 
 /**
+ * Create a new user account.
+ */
+export const useCreateUser = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      name,
+      email,
+      password,
+      systemRole,
+    }: {
+      name: string
+      email: string
+      password: string
+      systemRole?: SystemRole
+    }) =>
+      post<CommonResponse & { data: { id: string, name: string, email: string } }>(
+        '/custom/admin/users',
+        {
+          body: {
+            name,
+            email,
+            password,
+            system_role: systemRole || 'user',
+          },
+        },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'users'] })
+    },
+  })
+}
+
+/**
  * Update user system role.
  */
 export const useUpdateUserSystemRole = () => {
@@ -123,6 +158,35 @@ export const useDeleteUser = () => {
 
   return useMutation({
     mutationFn: (userId: string) => del<CommonResponse>(`/custom/admin/users/${userId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'users'] })
+    },
+  })
+}
+
+/**
+ * Batch action on users (enable/disable/delete).
+ */
+export const useBatchUserAction = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      userIds,
+      action,
+    }: {
+      userIds: string[]
+      action: 'enable' | 'disable' | 'delete'
+    }) =>
+      post<CommonResponse & { processed: number, failed: number, errors: Array<{ id: string, error: string }> }>(
+        '/custom/admin/users/batch',
+        {
+          body: {
+            user_ids: userIds,
+            action,
+          },
+        },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'users'] })
     },
