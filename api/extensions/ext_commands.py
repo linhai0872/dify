@@ -73,10 +73,18 @@ def init_app(app: DifyApp):
     # [CUSTOM] Register custom commands for multi-workspace permission control
     from custom.commands import (
         custom_list_super_admins,
+        custom_list_system_admins,
         custom_remove_super_admin,
+        custom_remove_system_admin,
         custom_set_super_admin,
+        custom_set_system_admin,
     )
     custom_cmds = [
+        # New commands
+        custom_set_system_admin,
+        custom_list_system_admins,
+        custom_remove_system_admin,
+        # Backward compatibility aliases (deprecated)
         custom_set_super_admin,
         custom_list_super_admins,
         custom_remove_super_admin,

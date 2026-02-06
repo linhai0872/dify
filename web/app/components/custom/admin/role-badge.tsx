@@ -12,6 +12,11 @@ export type RoleBadgeProps = {
 
 // System role colors
 const systemRoleColors: Record<string, { bg: string, text: string }> = {
+  // New role names
+  system_admin: { bg: 'bg-util-colors-red-red-50', text: 'text-util-colors-red-red-600' },
+  tenant_manager: { bg: 'bg-util-colors-blue-light-blue-50', text: 'text-util-colors-blue-light-blue-600' },
+  user: { bg: 'bg-components-badge-bg-gray', text: 'text-text-tertiary' },
+  // Legacy role names for backward compatibility
   super_admin: { bg: 'bg-util-colors-red-red-50', text: 'text-util-colors-red-red-600' },
   workspace_admin: { bg: 'bg-util-colors-blue-light-blue-50', text: 'text-util-colors-blue-light-blue-600' },
   normal: { bg: 'bg-components-badge-bg-gray', text: 'text-text-tertiary' },
