@@ -14,7 +14,7 @@ from controllers.console import console_ns
 from controllers.console.wraps import account_initialization_required, setup_required
 from custom.services.custom_admin_member_service import CustomAdminMemberService
 from custom.services.custom_system_permission_service import CustomSystemPermissionService
-from custom.wraps.custom_permission_wraps import system_admin_required, tenant_manager_or_admin_required
+from custom.wraps.custom_permission_wraps import tenant_manager_or_admin_required
 from libs.login import current_account_with_tenant, login_required
 
 
