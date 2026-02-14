@@ -8,7 +8,6 @@ from flask_restx import Resource
 
 from controllers.console import console_ns
 from controllers.console.wraps import account_initialization_required, setup_required
-from custom.models.custom_account_ext import SystemRole
 from custom.wraps.custom_permission_wraps import system_admin_required
 from extensions.ext_database import db
 from libs.login import login_required
