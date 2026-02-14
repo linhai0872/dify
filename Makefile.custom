@@ -766,6 +766,45 @@ clean: ## 清理构建产物
 	docker image prune -f
 	@echo "$(GREEN)✅ 清理完成$(NC)"
 
+cli-login: ## CLI 登录测试 (自动 Base64 编码密码, 用法: make -f Makefile.custom cli-login EMAIL=x@y.com PASSWORD=xxx)
+	@if [ -z "$(EMAIL)" ] || [ -z "$(PASSWORD)" ]; then \
+		echo "$(RED)❌ 用法: make -f Makefile.custom cli-login EMAIL=<邮箱> PASSWORD=<密码>$(NC)"; \
+		echo "$(YELLOW)   示例: make -f Makefile.custom cli-login EMAIL=admin@example.com PASSWORD=mypassword123$(NC)"; \
+		exit 1; \
+	fi
+	@ENCODED_PW=$$(printf '%s' '$(PASSWORD)' | base64); \
+	echo "$(GREEN)🔐 登录测试: $(EMAIL)$(NC)"; \
+	RESULT=$$(curl -s -X POST "http://localhost:5001/console/api/login" \
+		-H "Content-Type: application/json" \
+		-d "{\"email\":\"$(EMAIL)\",\"password\":\"$$ENCODED_PW\",\"language\":\"zh-Hans\",\"remember_me\":true}"); \
+	echo "$$RESULT" | python3 -m json.tool 2>/dev/null || echo "$$RESULT"
+
+cli-reset-password: ## CLI 重置密码 (用法: make -f Makefile.custom cli-reset-password EMAIL=x@y.com PASSWORD=xxx)
+	@if [ -z "$(EMAIL)" ] || [ -z "$(PASSWORD)" ]; then \
+		echo "$(RED)❌ 用法: make -f Makefile.custom cli-reset-password EMAIL=<邮箱> PASSWORD=<新密码>$(NC)"; \
+		echo "$(YELLOW)   密码要求: 至少8位, 包含字母和数字$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(YELLOW)🔑 重置密码: $(EMAIL)$(NC)"
+	@cd api && uv run python -c "\
+import os, base64, binascii, hashlib; \
+from extensions.ext_database import db; \
+from models.account import Account; \
+from app import create_app; \
+app = create_app(); \
+ctx = app.app_context(); \
+ctx.push(); \
+acc = db.session.query(Account).filter_by(email='$(EMAIL)').first(); \
+assert acc, 'Account not found: $(EMAIL)'; \
+salt = os.urandom(16); \
+dk = hashlib.pbkdf2_hmac('sha256', '$(PASSWORD)'.encode(), salt, 10000); \
+acc.password = base64.b64encode(binascii.hexlify(dk)).decode(); \
+acc.password_salt = base64.b64encode(salt).decode(); \
+db.session.commit(); \
+print('Password reset done for $(EMAIL)'); \
+" 2>&1 | grep -v "^warning:\|^2026-\|UserWarning\|from controllers"
+	@echo "$(GREEN)✅ 密码已重置$(NC)"
+
 # ============================================================
 # 帮助
 # ============================================================
