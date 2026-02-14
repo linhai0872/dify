@@ -72,6 +72,15 @@ dev-setup: ## 🔧 初始化开发环境
 	@$(MAKE) -f Makefile.custom check-deps
 	@$(MAKE) -f Makefile.custom env-init ENV=dev
 	@echo ""
+	@echo "$(YELLOW)🔍 检查自定义 Sandbox 镜像...$(NC)"
+	@# 检测镜像是否存在（幂等性：镜像存在则跳过）
+	@if docker inspect $(SANDBOX_CUSTOM_IMAGE) >/dev/null 2>&1; then \
+		echo "$(GREEN)✅ 自定义 Sandbox 镜像已存在: $(SANDBOX_CUSTOM_IMAGE)$(NC)"; \
+	else \
+		echo "$(YELLOW)⚠️  自定义 Sandbox 镜像不存在，开始构建...$(NC)"; \
+		$(MAKE) -f Makefile.custom sandbox-build; \
+	fi
+	@echo ""
 	@echo "$(GREEN)✅ 开发环境初始化完成！$(NC)"
 	@echo "$(YELLOW)📝 下一步:$(NC)"
 	@echo "  1. 编辑配置: .custom/env/.env.custom.dev"
@@ -81,6 +90,14 @@ dev-start: ## 🚀 一键启动开发环境 (中间件+后端+前端)
 	@if [ ! -f ".custom/env/.env.custom.dev" ]; then \
 		echo "$(RED)❌ 请先初始化开发环境: make -f Makefile.custom dev-setup$(NC)"; \
 		exit 1; \
+	fi
+	@# 启动前检查自定义 Sandbox 镜像（幂等性：镜像存在则跳过）
+	@echo "$(YELLOW)🔍 检查自定义 Sandbox 镜像...$(NC)"
+	@if ! docker inspect $(SANDBOX_CUSTOM_IMAGE) >/dev/null 2>&1; then \
+		echo "$(YELLOW)⚠️  自定义 Sandbox 镜像不存在，开始构建...$(NC)"; \
+		$(MAKE) -f Makefile.custom sandbox-build; \
+	else \
+		echo "$(GREEN)✅ 自定义 Sandbox 镜像就绪$(NC)"; \
 	fi
 	@echo "$(GREEN)🚀 启动开发环境...$(NC)"
 	@echo ""
@@ -183,13 +200,23 @@ dev-api: ## 启动后端 (前台运行，自动合并环境变量)
 		echo "$(RED)❌ api/.env.example 不存在$(NC)"; \
 		exit 1; \
 	fi
-	@echo "$(GREEN)✓ 重置 api/.env (从模板)$(NC)"
-	@cp api/.env.example api/.env
+	@if [ ! -f "api/.env" ]; then \
+		echo "$(GREEN)✓ 初始化 api/.env (从模板)$(NC)"; \
+		cp api/.env.example api/.env; \
+	else \
+		echo "$(YELLOW)⚠️  api/.env 已存在，跳过重置$(NC)"; \
+	fi
 	@if [ -f ".custom/env/.env.custom.dev" ]; then \
-		echo "$(GREEN)✓ 追加二开环境变量: .custom/env/.env.custom.dev$(NC)"; \
-		echo "" >> api/.env; \
-		echo "# ====== Custom Environment Variables (dev) ======" >> api/.env; \
-		cat .custom/env/.env.custom.dev >> api/.env; \
+		if ! grep -q "# ====== Custom Environment Variables (dev) ======" api/.env 2>/dev/null; then \
+			echo "$(GREEN)✓ 追加二开环境变量: .custom/env/.env.custom.dev$(NC)"; \
+			sed -i.bak '/^SECRET_KEY=$$/d' api/.env; \
+			rm -f api/.env.bak; \
+			echo "" >> api/.env; \
+			echo "# ====== Custom Environment Variables (dev) ======" >> api/.env; \
+			cat .custom/env/.env.custom.dev >> api/.env; \
+		else \
+			echo "$(GREEN)✓ 二开环境变量已存在，跳过追加$(NC)"; \
+		fi \
 	else \
 		echo "$(YELLOW)⚠️  .custom/env/.env.custom.dev 不存在，仅使用官方环境变量$(NC)"; \
 	fi
@@ -202,13 +229,23 @@ dev-web: ## 启动前端 (前台运行，自动合并环境变量)
 		echo "$(RED)❌ web/.env.example 不存在$(NC)"; \
 		exit 1; \
 	fi
-	@echo "$(GREEN)✓ 重置 web/.env (从模板)$(NC)"
-	@cp web/.env.example web/.env
+	@if [ ! -f "web/.env" ]; then \
+		echo "$(GREEN)✓ 初始化 web/.env (从模板)$(NC)"; \
+		cp web/.env.example web/.env; \
+	else \
+		echo "$(YELLOW)⚠️  web/.env 已存在，跳过重置$(NC)"; \
+	fi
 	@if [ -f ".custom/env/.env.custom.dev" ]; then \
-		echo "$(GREEN)✓ 追加二开环境变量: .custom/env/.env.custom.dev$(NC)"; \
-		echo "" >> web/.env; \
-		echo "# ====== Custom Environment Variables (dev) ======" >> web/.env; \
-		cat .custom/env/.env.custom.dev >> web/.env; \
+		if ! grep -q "# ====== Custom Environment Variables (dev) ======" web/.env 2>/dev/null; then \
+			echo "$(GREEN)✓ 追加二开环境变量: .custom/env/.env.custom.dev$(NC)"; \
+			sed -i.bak '/^SECRET_KEY=$$/d' web/.env 2>/dev/null || true; \
+			rm -f web/.env.bak 2>/dev/null || true; \
+			echo "" >> web/.env; \
+			echo "# ====== Custom Environment Variables (dev) ======" >> web/.env; \
+			cat .custom/env/.env.custom.dev >> web/.env; \
+		else \
+			echo "$(GREEN)✓ 二开环境变量已存在，跳过追加$(NC)"; \
+		fi \
 	else \
 		echo "$(YELLOW)⚠️  .custom/env/.env.custom.dev 不存在，仅使用官方环境变量$(NC)"; \
 	fi
@@ -227,13 +264,23 @@ dev-api-background: ## 启动后端 (后台运行，日志输出到文件)
 		echo "$(RED)❌ api/.env.example 不存在$(NC)"; \
 		exit 1; \
 	fi
-	@echo "$(GREEN)✓ 重置 api/.env (从模板)$(NC)"
-	@cp api/.env.example api/.env
+	@if [ ! -f "api/.env" ]; then \
+		echo "$(GREEN)✓ 初始化 api/.env (从模板)$(NC)"; \
+		cp api/.env.example api/.env; \
+	else \
+		echo "$(YELLOW)⚠️  api/.env 已存在，跳过重置$(NC)"; \
+	fi
 	@if [ -f ".custom/env/.env.custom.dev" ]; then \
-		echo "$(GREEN)✓ 追加二开环境变量: .custom/env/.env.custom.dev$(NC)"; \
-		echo "" >> api/.env; \
-		echo "# ====== Custom Environment Variables (dev) ======" >> api/.env; \
-		cat .custom/env/.env.custom.dev >> api/.env; \
+		if ! grep -q "# ====== Custom Environment Variables (dev) ======" api/.env 2>/dev/null; then \
+			echo "$(GREEN)✓ 追加二开环境变量: .custom/env/.env.custom.dev$(NC)"; \
+			sed -i.bak '/^SECRET_KEY=$$/d' api/.env; \
+			rm -f api/.env.bak; \
+			echo "" >> api/.env; \
+			echo "# ====== Custom Environment Variables (dev) ======" >> api/.env; \
+			cat .custom/env/.env.custom.dev >> api/.env; \
+		else \
+			echo "$(GREEN)✓ 二开环境变量已存在，跳过追加$(NC)"; \
+		fi \
 	else \
 		echo "$(YELLOW)⚠️  .custom/env/.env.custom.dev 不存在，仅使用官方环境变量$(NC)"; \
 	fi
@@ -482,18 +529,32 @@ env-merge: ## 合并二开环境变量到 docker/.env (用法: make env-merge EN
 		exit 1; \
 	fi
 	@echo "$(GREEN)🔄 合并 $(ENV) 环境变量到 docker/.env...$(NC)"
-	@if [ ! -f "docker/.env" ]; then \
-		echo "$(RED)❌ docker/.env 不存在，请先运行: make -f Makefile.custom env-init ENV=$(ENV)$(NC)"; \
+	@if [ ! -f "docker/.env.example" ]; then \
+		echo "$(RED)❌ docker/.env.example 不存在$(NC)"; \
 		exit 1; \
 	fi
 	@if [ ! -f ".custom/env/.env.custom.$(ENV)" ]; then \
 		echo "$(RED)❌ .custom/env/.env.custom.$(ENV) 不存在$(NC)"; \
 		exit 1; \
 	fi
-	@cp docker/.env.example docker/.env
-	@echo "" >> docker/.env
-	@echo "# ====== Custom Environment Variables ($(ENV)) ======" >> docker/.env
-	@cat .custom/env/.env.custom.$(ENV) >> docker/.env
+	@if [ ! -f "docker/.env" ]; then \
+		echo "$(GREEN)✓ 初始化 docker/.env (从模板)$(NC)"; \
+		cp docker/.env.example docker/.env; \
+		echo "" >> docker/.env; \
+		echo "# ====== Custom Environment Variables ($(ENV)) ======" >> docker/.env; \
+		cat .custom/env/.env.custom.$(ENV) >> docker/.env; \
+	else \
+		echo "$(YELLOW)⚠️  docker/.env 已存在$(NC)"; \
+		echo "$(YELLOW)💡 提示: 如需重新生成，请先删除 docker/.env 文件$(NC)"; \
+		if ! grep -q "# ====== Custom Environment Variables ($(ENV)) ======" docker/.env 2>/dev/null; then \
+			echo "$(GREEN)✓ 追加二开环境变量: .custom/env/.env.custom.$(ENV)$(NC)"; \
+			echo "" >> docker/.env; \
+			echo "# ====== Custom Environment Variables ($(ENV)) ======" >> docker/.env; \
+			cat .custom/env/.env.custom.$(ENV) >> docker/.env; \
+		else \
+			echo "$(GREEN)✓ 二开环境变量已存在，跳过追加$(NC)"; \
+		fi \
+	fi
 	@echo "$(GREEN)✅ 已合并 .custom/env/.env.custom.$(ENV) → docker/.env$(NC)"
 
 # ============================================================
@@ -674,11 +735,23 @@ db-migrate-dev: ## 执行数据库迁移 (开发环境，自动合并环境变�
 		echo "$(RED)❌ api/.env.example 不存在$(NC)"; \
 		exit 1; \
 	fi
-	@cp api/.env.example api/.env
+	@if [ ! -f "api/.env" ]; then \
+		echo "$(GREEN)✓ 初始化 api/.env (从模板)$(NC)"; \
+		cp api/.env.example api/.env; \
+	else \
+		echo "$(YELLOW)⚠️  api/.env 已存在，跳过重置$(NC)"; \
+	fi
 	@if [ -f ".custom/env/.env.custom.dev" ]; then \
-		echo "" >> api/.env; \
-		echo "# ====== Custom Environment Variables (dev) ======" >> api/.env; \
-		cat .custom/env/.env.custom.dev >> api/.env; \
+		if ! grep -q "# ====== Custom Environment Variables (dev) ======" api/.env 2>/dev/null; then \
+			echo "$(GREEN)✓ 追加二开环境变量: .custom/env/.env.custom.dev$(NC)"; \
+			sed -i.bak '/^SECRET_KEY=$$/d' api/.env; \
+			rm -f api/.env.bak; \
+			echo "" >> api/.env; \
+			echo "# ====== Custom Environment Variables (dev) ======" >> api/.env; \
+			cat .custom/env/.env.custom.dev >> api/.env; \
+		else \
+			echo "$(GREEN)✓ 二开环境变量已存在，跳过追加$(NC)"; \
+		fi \
 	fi
 	@cd api && uv run flask db upgrade
 	@echo "$(GREEN)✅ 数据库迁移完成$(NC)"
