@@ -37,7 +37,7 @@ class WorkflowExecution(BaseModel):
     error_message: str = Field(default="")
     total_tokens: int = Field(default=0)
     # [CUSTOM] 二开: Workflow 费用统计
-    custom_total_price: Decimal = Field(default=Decimal("0"))
+    custom_total_price: Decimal = Field(default=Decimal(0))
     custom_currency: str = Field(default="USD")
     # [/CUSTOM]
     total_steps: int = Field(default=0)
