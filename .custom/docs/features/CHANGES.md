@@ -1,13 +1,20 @@
-- [025ebd90a9] fix(api): [CUSTOM] 修复 upstream 1.12.0 循环导入问题
-- [5e02bdfa78] merge(upstream): [CUSTOM] 同步 Dify 1.12.0
-- [5249ffb13f] chore(style): [CUSTOM] 代码风格修复和 Sandbox 配置完善
-- [9f884cf5d8] docs(features): [CUSTOM] 添加原生文档提取器功能文档
-- [c5fbf37ca1] feat(rag): [CUSTOM] 添加原生文档提取器支持 DOC/PPT/PPTX/EPUB 格式
-- [e8d009cd7e] feat(log): [CUSTOM] 添加应用日志时区统一功能
-- [44268e72fc] feat(workflow): [CUSTOM] 添加指数退避重试机制
-- [9f64cec28e] feat(api): [CUSTOM] 添加追踪搜索功能和 keyword_scope 参数
-- [77c9bb0868] feat(api): [CUSTOM] 添加 Service API 远程文件操作接口
-- [16a2006dc8] feat(workflow): [CUSTOM] 添加 Sandbox 依赖管理和代码节点文件输出功能
-- [fb63a893dc] perf(docker): [CUSTOM] 补充环境变量性能优化配置
-- [278bca6b46] feat(docker): [CUSTOM] 添加二开环境变量性能优化模板
-- [167ae600fc] fix(api): [CUSTOM] 修复 datasets API 参数验证失败问题
+- [5d565604cd] chore(dev): [CUSTOM] 补全环境配置模板和 CLI 登录工具
+- [a76abc4b29] chore(db): [CUSTOM] 合并 upstream 1.13.0 和二开数据库迁移
+- [e4fc9dc4db] chore(dev): [CUSTOM] 完善开发环境幂等性和文档
+- [21bc2ba9ae] feat(overview): [CUSTOM] Workflow 费用显示 + 日期时间范围选择器
+- [62f70d1176] feat(admin): [CUSTOM] 完善多工作空间权限管理系统
+- [6e7f51c8a1] chore: [CUSTOM] 同步 v1.12.1 前暂存工作进度
+- [11431736d8] refactor(makefile): [CUSTOM] 重构 Makefile.custom 命令规范
+- [7ccf7083a9] chore(db): [CUSTOM] 合并 upstream 1.12.0 和二开数据库迁移
+- [4600a10e60] docs: [CUSTOM] 更新 CHANGES.md - 同步 1.12.0 后
+- [6c148f1340] chore(style): [CUSTOM] 代码风格修复和 Sandbox 配置完善
+- [d231068a2c] docs(features): [CUSTOM] 添加原生文档提取器功能文档
+- [fd85d808d5] feat(rag): [CUSTOM] 添加原生文档提取器支持 DOC/PPT/PPTX/EPUB 格式
+- [77db6e4097] feat(log): [CUSTOM] 添加应用日志时区统一功能
+- [74816a8a7a] feat(workflow): [CUSTOM] 添加指数退避重试机制
+- [26589d9ea7] feat(api): [CUSTOM] 添加追踪搜索功能和 keyword_scope 参数
+- [bbc3d9bbb5] feat(api): [CUSTOM] 添加 Service API 远程文件操作接口
+- [fb11c68ca6] feat(workflow): [CUSTOM] 添加 Sandbox 依赖管理和代码节点文件输出功能
+- [67ebc2b870] perf(docker): [CUSTOM] 补充环境变量性能优化配置
+- [8dc9f0ea4f] feat(docker): [CUSTOM] 添加二开环境变量性能优化模板
+- [4044b30396] fix(api): [CUSTOM] 修复 datasets API 参数验证失败问题
