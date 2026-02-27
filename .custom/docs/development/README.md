@@ -8,8 +8,8 @@
 
 1. [分支策略](#分支策略)
 2. [开发流程](#开发流程)
-3. [环境与部署](#环境与部署)
-4. [环境配置管理](#环境配置管理)
+3. [快速开始](#快速开始)
+4. [环境变量管理](#环境变量管理)
 5. [Sandbox 依赖管理](#sandbox-依赖管理)
 6. [编码规范](#编码规范)
 7. [命名规范](#命名规范)
@@ -21,6 +21,32 @@
 13. [变更追踪](#变更追踪)
 14. [回滚策略](#回滚策略)
 15. [同步与升级](#同步与升级)
+
+---
+
+## Agent 开发流程
+
+1. **规划**：读取本文档，按需查阅[文档索引](#按需文档索引)，提出方案和待确认细节
+2. **编码**：遵循[编码规范](#编码规范)和[命名规范](#命名规范)实现功能
+3. **自测**：运行测试和检查，确认无报错后交付用户验证
+   - 后端：`cd api && uv run pytest tests/custom/ -v`
+   - 前端：`cd web && pnpm lint:fix && pnpm type-check:tsgo`
+4. **审查**：用户验证通过后，按 [code-review-checklist.md](workflow/code-review-checklist.md) 逐项自检并执行快速检查命令
+5. **提交**：格式 `<类型>(<范围>): [CUSTOM] <标题>`，提交到 development 分支
+
+---
+
+## 按需文档索引
+
+开发过程中遇到以下场景，主动查阅对应文档：
+
+| 场景 | 查阅文档 |
+|------|----------|
+| 新增后端 API 端点 | [`docs/api/README.md`](../api/README.md) |
+| 新增/修改数据库表 | 本文档 [§数据库迁移管理](#数据库迁移管理) |
+| 修改/新增环境变量 | [`environment-config.md`](environment-config.md) |
+| 添加 Python/系统依赖 | 本文档 [§Sandbox 依赖管理](#sandbox-依赖管理) |
+| 发布前准备 | [`workflow/release-checklist.md`](workflow/release-checklist.md) |
 
 ---
 
@@ -203,16 +229,6 @@ make -f Makefile.custom env-merge ENV=test
 tail -20 docker/.env
 ```
 
----
-
-## 环境配置管理
-
-### 核心原则
-
-1. **幂等性优先**: 多次执行相同操作，结果保持一致
-2. **配置分层**: 官方配置 → 二开配置 → 运行时配置
-3. **最小重置**: 只在必要时重置配置文件
-
 ### 常见问题
 
 | 问题 | 原因 | 解决方案 |
@@ -221,15 +237,7 @@ tail -20 docker/.env
 | 配置修改不生效 | 旧版 Makefile 非幂等 | 更新 Makefile 或删除 `.env` |
 | 插件功能无法使用 | 密钥不匹配 | 检查 `INNER_API_KEY_FOR_PLUGIN` |
 
-### 详细文档
-
-完整的环境配置管理指南，包括：
-- 配置文件结构
-- 幂等性设计原理
-- 正确修改配置的方法
-- 故障排查步骤
-
-📖 **[环境配置管理指南](environment-config.md)**
+📖 **[完整环境配置指南](environment-config.md)**
 
 ---
 
@@ -241,12 +249,30 @@ Dify 代码节点运行在隔离的 Sandbox 环境中。如需使用第三方 Py
 
 ```
 .custom/docker/sandbox/
-├── Dockerfile.sandbox-custom     # 自定义镜像（安装系统依赖）
-└── system-requirements.txt       # 系统依赖声明（apt 包名）
+├── Dockerfile.sandbox-custom     # 自定义镜像（系统依赖 + 配置烘焙）
+├── system-requirements.txt       # 系统依赖声明（apt 包名）
+└── conf/                         # 配置文件（烘焙到镜像中）
+    ├── init-config.sh            #   入口点脚本（架构检测+配置合并）
+    ├── config.base.yaml          #   基础配置
+    └── arch/                     #   架构特定 syscall 白名单
+        ├── syscalls.aarch64.yaml
+        └── syscalls.x86_64.yaml
 
 docker/volumes/sandbox/dependencies/
 └── python-requirements.txt       # Python 包声明（原生机制）
 ```
+
+### 环境差异
+
+| 配置项 | 开发环境 | 测试/生产环境 |
+|--------|---------|-------------|
+| 入口点 | 镜像内 ENTRYPOINT | 镜像内 ENTRYPOINT |
+| 配置文件 | 镜像内烘焙 | 镜像内烘焙 |
+| seccomp | `unconfined` (override) | 依赖镜像内 syscall 白名单 |
+| /custom-conf 挂载 | 不需要 (已烘焙) | 不需要 (已烘焙) |
+
+开发环境通过 `docker-compose.override.yaml` 额外设置 `seccomp:unconfined` 快速迭代；
+测试/生产环境镜像自包含所有配置，无需 override。
 
 ### 添加依赖
 
@@ -425,13 +451,13 @@ custom_code_here()
 ### 格式
 
 ```
-<类型>(<范围>): <标题>
+<类型>(<范围>): [CUSTOM] <标题>
 
 <正文>
 ```
 
-- **标题**：50 字内，中文
-- **范围**：可选，如 `api`、`web`、`workflow`
+- **标题**：50 字内，中文，所有二开 commit 统一加 `[CUSTOM]` 标记
+- **范围**：可选，如 `api`、`web`、`workflow`、`db`、`docker`、`dev`、`rag` 等
 - **正文**：可选，分点描述
 
 ### 类型
@@ -456,23 +482,23 @@ custom_code_here()
 
 ```bash
 # 简单
-feat(api): 添加自定义用户权限模块
+feat(api): [CUSTOM] 添加自定义用户权限模块
 
 # 详细
-feat(api): 添加多租户支持
+feat(api): [CUSTOM] 添加多租户支持
 
 - 新增 TenantService 处理租户隔离
 - 扩展 User 模型增加 tenant_id 字段
 - 添加租户切换 API /api/v1/tenant/switch
 
-# 修改官方文件
-refactor(api): [CUSTOM] 重构 app_service 支持多租户
+# 同步上游
+sync(upstream): [CUSTOM] 同步 Dify 1.13.0
 
-- 修改 api/services/app_service.py (+15 行)
-- 原因：官方不支持多租户，必须修改核心文件
+- 从 1.12.1 rebase 到 1.13.0 (92 个 upstream commit)
+- 解决 4 处合并冲突 (11 个文件)
 ```
 
-修改官方文件的 commit 用 `[CUSTOM]` 标记，便于 `git log --grep="\[CUSTOM\]"` 追溯。
+所有二开 commit 统一带 `[CUSTOM]`，便于 `git log --grep="\[CUSTOM\]"` 追溯。
 
 ---
 

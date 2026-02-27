@@ -5,7 +5,7 @@
 #
 # Build:
 #   docker build -f .custom/docker/api/Dockerfile.api-custom \
-#     --build-arg BASE_IMAGE=langgenius/dify-api:0.15.3 \
+#     --build-arg BASE_IMAGE=langgenius/dify-api:<version> \
 #     -t dify-api-custom:latest .
 #
 # Usage:

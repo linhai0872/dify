@@ -21,7 +21,7 @@
 - [ ] 二开测试位于 `api/tests/custom/` 目录
 - [ ] 修改的官方文件已添加 `[CUSTOM]` 标记
 - [ ] 修改范围最小化（只改必要行）
-- [ ] Commit message 包含 `[CUSTOM]` 标记和修改原因
+- [ ] Commit message 统一使用 `<类型>(<范围>): [CUSTOM] <标题>` 格式
 - [ ] 二开功能使用环境变量控制（`DIFY_CUSTOM_*_ENABLED`）
 - [ ] 功能开关检查代码位于 `api/custom/feature_flags.py`
 - [ ] 默认值为 `false`，避免影响现有功能
@@ -67,6 +67,9 @@
 - [ ] 不硬编码文本
 - [ ] 自定义 Hook 使用 `useCustom` 前缀
 - [ ] Hook 文件使用 `use-custom-*.ts` 命名
+- [ ] `pnpm lint:fix` 通过（无 lint 报错）
+- [ ] `pnpm type-check:tsgo` 通过（无类型错误）
+- [ ] 无 `any` 类型使用
 
 ---
 
@@ -120,9 +123,8 @@
 ## 七、文档检查
 
 - [ ] 新增 API 已记录到 `.custom/docs/api/README.md`（包含请求示例、响应示例、错误码）
-- [ ] Commit 格式：`<类型>(<范围>): <标题>`
-- [ ] 类型选择正确（feat/fix/refactor 等）
-- [ ] 修改官方文件时包含 `[CUSTOM]` 标记
+- [ ] Commit 格式：`<类型>(<范围>): [CUSTOM] <标题>`
+- [ ] 类型选择正确（feat/fix/refactor/sync 等）
 
 ---
 
@@ -197,15 +199,18 @@
 ## 快速检查命令
 
 ```bash
+# 后端测试
+cd api && uv run pytest tests/custom/ -v --tb=short
+
+# 前端检查
+cd web && pnpm lint:fix && pnpm type-check:tsgo
+
 # 命名规范检查
 grep -r "custom_" api/custom/ web/app/components/custom/ > /dev/null && echo "✅ 命名规范检查通过" || echo "❌ 未检测到 custom 前缀使用"
 
 # 修改官方文件检查
-git diff --name-only main | grep -v "custom/" && echo "⚠️ 检测到官方文件修改"
+git diff --name-only development | grep -v "custom/" | grep -v ".custom/" && echo "⚠️ 检测到官方文件修改，确认已添加 [CUSTOM] 标记"
 
 # 功能开关检查
 grep -r "DIFY_CUSTOM_" api/custom/ > /dev/null && echo "✅ 功能开关检查通过" || echo "⚠️ 未检测到功能开关使用"
-
-# 测试检查
-make -f Makefile.custom test-custom
 ```

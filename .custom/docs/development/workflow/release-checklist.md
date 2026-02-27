@@ -10,7 +10,7 @@
 
 - [ ] 代码审查通过（使用 [code-review-checklist.md](code-review-checklist.md)）
 - [ ] 所有修改已提交到 development 分支
-- [ ] 修改官方文件的 commit 包含 `[CUSTOM]` 标记
+- [ ] 所有 commit 使用 `<类型>(<范围>): [CUSTOM] <标题>` 格式
 
 ---
 
