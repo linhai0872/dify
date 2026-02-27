@@ -731,7 +731,8 @@ services:
 
   # API service
   api:
-    image: langgenius/dify-api:1.13.3
+    # [CUSTOM] 支持通过环境变量切换自定义镜像
+    image: ${API_IMAGE:-langgenius/dify-api:1.13.3}
     restart: always
     environment:
       # Use the shared environment variables.
@@ -773,7 +774,8 @@ services:
   # worker service
   # The Celery worker for processing all queues (dataset, workflow, mail, etc.)
   worker:
-    image: langgenius/dify-api:1.13.3
+    # [CUSTOM] 支持通过环境变量切换自定义镜像
+    image: ${API_IMAGE:-langgenius/dify-api:1.13.3}
     restart: always
     environment:
       # Use the shared environment variables.
@@ -812,7 +814,8 @@ services:
   # worker_beat service
   # Celery beat for scheduling periodic tasks.
   worker_beat:
-    image: langgenius/dify-api:1.13.3
+    # [CUSTOM] 支持通过环境变量切换自定义镜像
+    image: ${API_IMAGE:-langgenius/dify-api:1.13.3}
     restart: always
     environment:
       # Use the shared environment variables.
@@ -842,7 +845,8 @@ services:
 
   # Frontend web application.
   web:
-    image: langgenius/dify-web:1.13.3
+    # [CUSTOM] 支持通过环境变量切换自定义镜像
+    image: ${WEB_IMAGE:-langgenius/dify-web:1.13.3}
     restart: always
     environment:
       CONSOLE_API_URL: ${CONSOLE_API_URL:-}
