@@ -7,11 +7,14 @@ import random
 import time
 from typing import TYPE_CHECKING, final
 
+from dify_graph.entities.base_node_data import RetryConfig
 from dify_graph.enums import (
     BackoffStrategy,
-    ErrorStrategy as ErrorStrategyEnum,
     WorkflowNodeExecutionMetadataKey,
     WorkflowNodeExecutionStatus,
+)
+from dify_graph.enums import (
+    ErrorStrategy as ErrorStrategyEnum,
 )
 from dify_graph.graph import Graph
 from dify_graph.graph_events import (
@@ -21,7 +24,6 @@ from dify_graph.graph_events import (
     NodeRunRetryEvent,
 )
 from dify_graph.node_events import NodeRunResult
-from dify_graph.entities.base_node_data import RetryConfig
 
 if TYPE_CHECKING:
     from .domain import GraphExecution

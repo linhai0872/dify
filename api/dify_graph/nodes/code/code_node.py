@@ -1,17 +1,17 @@
 # [CUSTOM] 文件处理相关导入
 import base64
-from pathlib import Path
-# [/CUSTOM]
 
+# [/CUSTOM]
 from collections.abc import Mapping, Sequence
 from decimal import Decimal
+from pathlib import Path
 from textwrap import dedent
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
-from configs import dify_config  # [CUSTOM]
 from core.file.enums import FileTransferMethod  # [CUSTOM]
 from core.file.models import File  # [CUSTOM]
-from factories import file_factory  # [CUSTOM]
+
+from configs import dify_config  # [CUSTOM]
 from core.tools.tool_file_manager import ToolFileManager  # [CUSTOM]
 from dify_graph.entities.graph_config import NodeConfigDict
 from dify_graph.enums import BuiltinNodeTypes, WorkflowNodeExecutionStatus
@@ -21,6 +21,7 @@ from dify_graph.nodes.code.entities import CodeLanguage, CodeNodeData
 from dify_graph.nodes.code.limits import CodeNodeLimits
 from dify_graph.variables.segments import ArrayFileSegment, FileSegment  # [CUSTOM] 添加 FileSegment
 from dify_graph.variables.types import SegmentType
+from factories import file_factory  # [CUSTOM]
 
 from .exc import (
     CodeNodeError,
