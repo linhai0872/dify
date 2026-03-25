@@ -219,7 +219,7 @@ class MessageBasedAppGenerator(BaseAppGenerator):
                 from_end_user_id=end_user_id,
                 from_account_id=account_id,
                 app_mode=app_config.app_mode,
-                external_trace_id=external_trace_id,  # [CUSTOM]
+                custom_external_trace_id=external_trace_id,  # [CUSTOM]
             )
 
             db.session.add(message)

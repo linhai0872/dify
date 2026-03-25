@@ -52,7 +52,7 @@ class CustomTraceService:
             .filter(
                 WorkflowRun.app_id == app_model.id,
                 WorkflowRun.tenant_id == app_model.tenant_id,
-                WorkflowRun.external_trace_id == trace_id,
+                WorkflowRun.custom_external_trace_id == trace_id,
             )
             .order_by(WorkflowRun.created_at.desc())
             .first()
@@ -78,7 +78,7 @@ class CustomTraceService:
             db.session.query(Message)
             .filter(
                 Message.app_id == app_model.id,
-                Message.external_trace_id == trace_id,
+                Message.custom_external_trace_id == trace_id,
             )
             .order_by(Message.created_at.desc())
             .first()
@@ -91,7 +91,7 @@ class CustomTraceService:
                 .filter(
                     WorkflowRun.app_id == app_model.id,
                     WorkflowRun.tenant_id == app_model.tenant_id,
-                    WorkflowRun.external_trace_id == trace_id,
+                    WorkflowRun.custom_external_trace_id == trace_id,
                 )
                 .order_by(WorkflowRun.created_at.desc())
                 .first()
@@ -135,7 +135,7 @@ class CustomTraceService:
             db.session.query(Message)
             .filter(
                 Message.app_id == app_model.id,
-                Message.external_trace_id == trace_id,
+                Message.custom_external_trace_id == trace_id,
             )
             .order_by(Message.created_at.desc())
             .first()
@@ -164,7 +164,7 @@ class CustomTraceService:
             db.session.query(Message)
             .filter(
                 Message.app_id == app_model.id,
-                Message.external_trace_id == trace_id,
+                Message.custom_external_trace_id == trace_id,
             )
             .order_by(Message.created_at.desc())
             .first()
@@ -195,7 +195,7 @@ class CustomTraceService:
             "error": workflow_run.error,
             "created_at": workflow_run.created_at.isoformat() if workflow_run.created_at else None,
             "finished_at": workflow_run.finished_at.isoformat() if workflow_run.finished_at else None,
-            "external_trace_id": workflow_run.external_trace_id,
+            "external_trace_id": workflow_run.custom_external_trace_id,
         }
 
     @staticmethod
@@ -210,7 +210,7 @@ class CustomTraceService:
             "status": message.status,
             "error": message.error,
             "created_at": message.created_at.isoformat() if message.created_at else None,
-            "external_trace_id": message.external_trace_id,
+            "external_trace_id": message.custom_external_trace_id,
         }
 
     @staticmethod

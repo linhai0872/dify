@@ -135,8 +135,8 @@ class WorkflowAppService:
                     # If not a valid UUID, search by exact match
                     keyword_conditions = [WorkflowRun.id == keyword]
             elif scope == "trace_id":
-                # [CUSTOM] Search by external_trace_id
-                keyword_conditions = [WorkflowRun.external_trace_id == keyword]
+                # [CUSTOM] Search by custom_external_trace_id
+                keyword_conditions = [WorkflowRun.custom_external_trace_id == keyword]
             else:
                 # Unknown scope, fall back to 'all'
                 keyword_conditions = [
