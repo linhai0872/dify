@@ -459,5 +459,5 @@ make -f Makefile.custom dev-start
 ## 相关文档
 
 - [开发规范 README](README.md)
-- [配置参数说明](../migrate_docs/CUSTOM_CONFIG_PARAMS.md)
+- [配置参数说明 (已归档)](../archive/CUSTOM_CONFIG_PARAMS.md)
 - [Sandbox 依赖管理](README.md#sandbox-依赖管理)

@@ -4,6 +4,21 @@
 
 ---
 
+## 功能总览
+
+| 功能 | 文档 | 功能开关 | 状态 |
+|------|------|---------|------|
+| 追踪搜索 | [workflow-log-search-enhancement.md](workflow-log-search-enhancement.md) | `DIFY_CUSTOM_TRACE_SEARCH_ENABLED` | 已上线 |
+| 原生文档提取 | [native-document-extractors.md](native-document-extractors.md) | `DIFY_CUSTOM_NATIVE_EXTRACTORS_ENABLED` | 已上线 |
+| 多工作空间权限 | [multi-workspace-permission.md](multi-workspace-permission.md) | `DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED` | 已上线 |
+| 代码节点文件输出 | [code-node-file-output.md](code-node-file-output.md) | — | 已上线 |
+| 指数退避重试 | [exponential-backoff-retry.md](exponential-backoff-retry.md) | — | 已上线 |
+| 远程文件操作 | [API 文档](../api/README.md#远程文件操作) | — | 已上线 |
+| 应用日志时区统一 | — | `LOG_TZ` / `DIFY_CUSTOM_LOG_TIMEZONE` | 已上线 |
+| Workflow 费用显示 | — | — | 已上线 |
+
+---
+
 ## 目录说明
 
 | 文档 | 说明 |
@@ -17,20 +32,16 @@
 
 ### 更新规则
 
-`CHANGES.md` 通过 `git log` 自动生成，每次发布二开功能时更新：
+`CHANGES.md` 通过 `git log` 生成原始数据，手动按类型分类整理：
 
 ```bash
-# 生成变更日志
-git log main..development --pretty=format:"- [%h] %s" > .custom/docs/features/CHANGES.md
+# 生成原始日志
+git log main..development --pretty=format:"- [%h] %s"
+
+# 手动按 feat/fix/chore 等类型分类整理到 CHANGES.md
 ```
 
 **前提**：commit message 需遵循 [development/README.md#Commit规范](../development/README.md#commit-规范)
-
-```
-<类型>(<范围>): <标题>
-
-示例：feat(api): 添加多租户支持
-```
 
 ---
 
@@ -71,7 +82,6 @@ git log main..development --pretty=format:"- [%h] %s" > .custom/docs/features/CH
 1. 步骤一
 2. 步骤二
 
-## 注意事项
-- 注意点 1
-- 注意点 2
+## 相关文件
+- `api/path/to/file.py`
 ```

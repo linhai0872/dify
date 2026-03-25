@@ -1,6 +1,6 @@
-# [CUSTOM] 扩展 dify-sandbox 镜像，添加系统依赖
+# [CUSTOM] 扩展 dify-sandbox 镜像，添加系统依赖 + 自定义配置
 # 支持 AMD64 和 ARM64 架构
-# 文档: .custom/docs/migrate_docs/FORK_PRD_MIGRATION.md
+# 文档: .custom/docs/archive/FORK_PRD_MIGRATION.md
 
 ARG BASE_IMAGE=langgenius/dify-sandbox:0.2.12
 FROM ${BASE_IMAGE}
@@ -30,3 +30,11 @@ RUN echo "=== Verifying library installation ===" && \
     echo "=== Library files ===" && \
     ls -la /usr/lib/*/libzbar* 2>/dev/null || echo "No libzbar files found" && \
     echo "=== Build complete ==="
+
+# [CUSTOM] 烘焙自定义配置到镜像
+# 包含: init-config.sh, config.base.yaml, 架构 syscall 白名单
+COPY conf/ /custom-conf/
+
+# [CUSTOM] 使用自定义入口点
+# 自动检测架构、合并 syscall 白名单、设置目录权限
+ENTRYPOINT ["/bin/sh", "/custom-conf/init-config.sh"]
