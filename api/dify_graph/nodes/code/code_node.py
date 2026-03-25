@@ -8,8 +8,8 @@ from pathlib import Path
 from textwrap import dedent
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
-from core.file.enums import FileTransferMethod  # [CUSTOM]
-from core.file.models import File  # [CUSTOM]
+from dify_graph.file.enums import FileTransferMethod  # [CUSTOM]
+from dify_graph.file.models import File  # [CUSTOM]
 
 from configs import dify_config  # [CUSTOM]
 from core.tools.tool_file_manager import ToolFileManager  # [CUSTOM]
