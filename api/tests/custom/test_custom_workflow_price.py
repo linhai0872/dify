@@ -9,8 +9,8 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from unittest.mock import MagicMock, PropertyMock, patch
 
-from core.workflow.entities.workflow_execution import WorkflowExecution
-from core.workflow.enums import WorkflowExecutionStatus, WorkflowType
+from dify_graph.entities.workflow_execution import WorkflowExecution
+from dify_graph.enums import WorkflowExecutionStatus, WorkflowType
 
 
 def _make_execution(**overrides) -> WorkflowExecution:

@@ -17,7 +17,7 @@ from controllers.common.errors import (
 from controllers.common.schema import register_schema_models
 from controllers.service_api import service_api_ns
 from controllers.service_api.wraps import FetchUserArg, WhereisUserArg, validate_app_token
-from core.file import helpers as file_helpers
+from dify_graph.file import helpers as file_helpers
 from core.helper import ssrf_proxy
 from extensions.ext_database import db
 from fields.file_fields import FileWithSignedUrl, RemoteFileInfo
