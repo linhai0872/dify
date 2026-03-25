@@ -8,13 +8,12 @@ from pathlib import Path
 from textwrap import dedent
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
-from dify_graph.file.enums import FileTransferMethod  # [CUSTOM]
-from dify_graph.file.models import File  # [CUSTOM]
-
 from configs import dify_config  # [CUSTOM]
 from core.tools.tool_file_manager import ToolFileManager  # [CUSTOM]
 from dify_graph.entities.graph_config import NodeConfigDict
 from dify_graph.enums import BuiltinNodeTypes, WorkflowNodeExecutionStatus
+from dify_graph.file.enums import FileTransferMethod  # [CUSTOM]
+from dify_graph.file.models import File  # [CUSTOM]
 from dify_graph.node_events import NodeRunResult
 from dify_graph.nodes.base.node import Node
 from dify_graph.nodes.code.entities import CodeLanguage, CodeNodeData
