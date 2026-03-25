@@ -128,7 +128,7 @@ const WorkflowAppLogList: FC<ILogs> = ({ logs, appDetail, onRefresh }) => {
   return (
     <div className="overflow-x-auto">
       <table className={cn('mt-2 w-full min-w-[440px] border-collapse border-0')}>
-        <thead className="system-xs-medium-uppercase text-text-tertiary">
+        <thead className="text-text-tertiary system-xs-medium-uppercase">
           <tr>
             <td className="w-5 rounded-l-lg bg-background-section-burn pr-1 pl-2 whitespace-nowrap"></td>
             <td className="bg-background-section-burn py-1.5 pl-3 whitespace-nowrap">
@@ -151,7 +151,7 @@ const WorkflowAppLogList: FC<ILogs> = ({ logs, appDetail, onRefresh }) => {
             {isWorkflow && <td className="rounded-r-lg bg-background-section-burn py-1.5 pl-3 whitespace-nowrap">{t('table.header.triggered_from', { ns: 'appLog' })}</td>}
           </tr>
         </thead>
-        <tbody className="system-sm-regular text-text-secondary">
+        <tbody className="text-text-secondary system-sm-regular">
           {localLogs.map((log: WorkflowAppLogDetail) => {
             const endUser = log.created_by_end_user ? log.created_by_end_user.session_id : log.created_by_account ? log.created_by_account.name : defaultValue
             return (

@@ -34,7 +34,7 @@ const RoleBadge = ({ role }: { role?: string | null }) => {
 
   if (role === null || role === undefined) {
     return (
-      <span className="system-2xs-medium shrink-0 rounded bg-components-badge-bg-dimm px-1 py-0.5 text-text-quaternary">
+      <span className="shrink-0 rounded bg-components-badge-bg-dimm px-1 py-0.5 text-text-quaternary system-2xs-medium">
         {t('admin.readOnly', { ns: 'custom' })}
       </span>
     )
@@ -53,7 +53,7 @@ const RoleBadge = ({ role }: { role?: string | null }) => {
 
   return (
     <span className={cn(
-      'system-2xs-medium shrink-0 rounded px-1 py-0.5',
+      'shrink-0 rounded px-1 py-0.5 system-2xs-medium',
       colors.bg,
       colors.text,
     )}

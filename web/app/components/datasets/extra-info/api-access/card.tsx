@@ -65,7 +65,7 @@ const Card = ({
               disabled={!isCurrentWorkspaceManager}
             />
           </div>
-          <div className="system-xs-regular text-text-tertiary">
+          <div className="text-text-tertiary system-xs-regular">
             {t('appMenus.apiAccessTip', { ns: 'common' })}
           </div>
         </div>

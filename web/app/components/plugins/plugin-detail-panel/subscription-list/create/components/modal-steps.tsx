@@ -222,7 +222,7 @@ const ManualPropertiesSection = ({
       )}
       <div className="mb-6">
         <div className="mb-3 flex items-center gap-2">
-          <div className="system-xs-medium-uppercase text-text-tertiary">
+          <div className="text-text-tertiary system-xs-medium-uppercase">
             {t('modal.manual.logs.title', { ns: 'pluginTrigger' })}
           </div>
           <div className="h-px flex-1 bg-linear-to-r from-divider-regular to-transparent" />
@@ -232,7 +232,7 @@ const ManualPropertiesSection = ({
           <div className="h-3.5 w-3.5">
             <RiLoader2Line className="h-full w-full animate-spin" />
           </div>
-          <div className="system-xs-regular text-text-tertiary">
+          <div className="text-text-tertiary system-xs-regular">
             {t('modal.manual.logs.loading', { ns: 'pluginTrigger', pluginName })}
           </div>
         </div>

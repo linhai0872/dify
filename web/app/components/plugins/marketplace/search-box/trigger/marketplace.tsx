@@ -45,7 +45,7 @@ const MarketplaceTrigger = ({
         }
         {
           selectedTagsLength > 2 && (
-            <div className="system-xs-medium text-text-tertiary">
+            <div className="text-text-tertiary system-xs-medium">
               +
               {selectedTagsLength - 2}
             </div>

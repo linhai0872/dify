@@ -25,7 +25,7 @@ const Instruction = ({
         <Line className="absolute right-[-184px] -bottom-px" type="horizontal" />
       </div>
       <div className="flex flex-col gap-y-1">
-        <div className="system-sm-medium text-text-secondary">
+        <div className="text-text-secondary system-sm-medium">
           {t('nodes.knowledgeBase.chunkStructureTip.title', { ns: 'workflow' })}
         </div>
         <div className="system-xs-regular">

@@ -92,7 +92,7 @@ const Empty = () => {
             <Line className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-90" />
             <Line className="absolute top-full left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-90" />
           </div>
-          <div className="system-md-regular text-text-tertiary">
+          <div className="text-text-tertiary system-md-regular">
             {text}
           </div>
           <div className="flex w-[236px] flex-col">

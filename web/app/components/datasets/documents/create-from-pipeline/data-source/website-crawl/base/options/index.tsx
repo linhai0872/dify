@@ -85,7 +85,7 @@ const Options = ({
           className="flex grow cursor-pointer items-center gap-x-0.5 select-none"
           onClick={foldToggle}
         >
-          <span className="system-sm-semibold-uppercase text-text-secondary">
+          <span className="text-text-secondary system-sm-semibold-uppercase">
             {t(`${I18N_PREFIX}.options`, { ns: 'datasetCreation' })}
           </span>
           <ArrowDownRoundFill className={cn('h-4 w-4 shrink-0 text-text-quaternary', fold && '-rotate-90')} />

@@ -42,7 +42,7 @@ const ImageUploader = () => {
               <RiImageAddLine className="size-4 text-text-tertiary" />
             </div>
             {files.length === 0 && (
-              <span className="system-sm-regular text-text-quaternary group-hover:text-text-tertiary">
+              <span className="text-text-quaternary system-sm-regular group-hover:text-text-tertiary">
                 {t('imageUploader.tip', {
                   ns: 'datasetHitTesting',
                   size: fileUploadConfig.imageFileSizeLimit,

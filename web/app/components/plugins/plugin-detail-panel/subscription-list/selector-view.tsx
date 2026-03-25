@@ -31,7 +31,7 @@ export const SubscriptionSelectorView: React.FC<SubscriptionSelectorProps> = ({
       {subscriptionCount > 0 && (
         <div className="mr-1.5 ml-7 flex h-8 items-center justify-between">
           <div className="flex shrink-0 items-center gap-1">
-            <span className="system-sm-semibold-uppercase text-text-secondary">
+            <span className="text-text-secondary system-sm-semibold-uppercase">
               {t('subscription.listNum', { ns: 'pluginTrigger', num: subscriptionCount })}
             </span>
             <Infotip
@@ -68,7 +68,7 @@ export const SubscriptionSelectorView: React.FC<SubscriptionSelectorProps> = ({
                   <RiCheckLine className="mr-2 h-4 w-4 shrink-0 text-text-accent" />
                 )}
                 <RiWebhookLine className={cn('mr-1.5 h-3.5 w-3.5 text-text-secondary', selectedId !== subscription.id && 'ml-6')} />
-                <span className="system-md-regular leading-6 text-text-secondary">
+                <span className="leading-6 text-text-secondary system-md-regular">
                   {subscription.name}
                 </span>
               </div>

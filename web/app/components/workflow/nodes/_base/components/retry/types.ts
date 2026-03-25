@@ -1,8 +1,9 @@
-// [CUSTOM] 二开: 指数退避重试策略类型
-export enum BackoffStrategy {
-  FIXED = 'fixed',
-  EXPONENTIAL = 'exponential',
-}
+// [CUSTOM] 二开: 指数退避重试策略类型（const + 类型别名，满足 erasableSyntaxOnly）
+export const backoffStrategies = {
+  FIXED: 'fixed',
+  EXPONENTIAL: 'exponential',
+} as const
+export type BackoffStrategy = (typeof backoffStrategies)[keyof typeof backoffStrategies]
 // [/CUSTOM]
 
 export type WorkflowRetryConfig = {

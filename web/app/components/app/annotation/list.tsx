@@ -58,7 +58,7 @@ const List: FC<Props> = ({
     <>
       <div className="relative mt-2 grow overflow-x-auto">
         <table className={cn('w-full min-w-[440px] border-collapse border-0')}>
-          <thead className="system-xs-medium-uppercase text-text-tertiary">
+          <thead className="text-text-tertiary system-xs-medium-uppercase">
             <tr>
               <td className="w-12 rounded-l-lg bg-background-section-burn px-2 whitespace-nowrap">
                 <Checkbox
@@ -75,7 +75,7 @@ const List: FC<Props> = ({
               <td className="w-[96px] rounded-r-lg bg-background-section-burn py-1.5 pl-3 whitespace-nowrap">{t('table.header.actions', { ns: 'appAnnotation' })}</td>
             </tr>
           </thead>
-          <tbody className="system-sm-regular text-text-secondary">
+          <tbody className="text-text-secondary system-sm-regular">
             {list.map(item => (
               <tr
                 key={item.id}
