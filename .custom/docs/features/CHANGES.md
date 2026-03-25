@@ -1,5 +1,28 @@
 # 变更日志
 
+## 基于 Dify 1.13.2
+
+### 修复 (fix)
+
+- 修复 code_node.py 中错误的 core.file 导入路径（迁移至 dify_graph.file）[fe764ca]
+- 修复 core.workflow/core.file 残留 import 路径（测试文件 + custom_remote_file）[7268dce]
+
+### 重构 (refactor)
+
+- 重命名 external_trace_id → custom_external_trace_id（遵循 custom_ 前缀规范）[8d33998]
+  - 涉及 workflow_runs / messages 两张表，新增可逆 migration
+- 修复 dify_graph 导入顺序并同步 uv.lock（ebooklib 依赖）[9637504]
+- 完善二开文档结构与配置说明 [56cfc37]
+
+### 基础设施 (chore)
+
+- 同步 Dify 1.13.1 [5d3945]
+- 同步 Dify 1.13.2（8 个 upstream commits，bugfix/refactor）[f16a739]
+  - 引入 RAGPipelineVariable 类型、移除 declared_attr、修复 Redis max_retries 硬编码
+- 镜像版本管理改造 + 开发规范完善 [e8ad349]
+
+---
+
 ## 基于 Dify 1.13.0
 
 ### 新功能 (feat)
