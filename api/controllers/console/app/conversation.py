@@ -142,7 +142,7 @@ class CompletionConversationApi(Resource):
             elif scope == "trace_id":
                 # Search by external_trace_id (exact match)
                 query = query.join(Message, Message.conversation_id == Conversation.id).where(
-                    Message.external_trace_id == args.keyword
+                    Message.custom_external_trace_id == args.keyword
                 )
             else:
                 # Unknown scope, fall back to 'all'
@@ -315,7 +315,7 @@ class ChatConversationApi(Resource):
                 # Search by external_trace_id (exact match)
                 query = (
                     query.join(Message, Message.conversation_id == Conversation.id)
-                    .where(Message.external_trace_id == args.keyword)
+                    .where(Message.custom_external_trace_id == args.keyword)
                     .group_by(Conversation.id)
                 )
             else:
