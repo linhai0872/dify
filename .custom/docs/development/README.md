@@ -32,7 +32,7 @@
    - 后端：`cd api && uv run pytest tests/custom/ -v`
    - 前端：`cd web && pnpm lint:fix && pnpm type-check:tsgo`
 4. **审查**：用户验证通过后，按 [code-review-checklist.md](workflow/code-review-checklist.md) 逐项自检并执行快速检查命令
-5. **提交**：格式 `<类型>(<范围>): [CUSTOM] <标题>`，提交到 development 分支
+5. **提交**：格式 `<类型>(<范围>): [CUSTOM] <标题>`，**只提交到 `development` 分支**。`production` 仅通过 `git merge development` 更新；若曾在 `production` 上应急提交，须 **`cherry-pick` 回 `development`** 后再合并，避免两分支历史脱节。
 
 ---
 
@@ -47,6 +47,7 @@
 | 修改/新增环境变量 | [`environment-config.md`](environment-config.md) |
 | 添加 Python/系统依赖 | 本文档 [§Sandbox 依赖管理](#sandbox-依赖管理) |
 | 发布前准备 | [`workflow/release-checklist.md`](workflow/release-checklist.md) |
+| 同步上游后核对 Docker 附属镜像 | 本文档 [§附属官方镜像对齐](#附属官方镜像对齐) |
 
 ---
 
@@ -665,6 +666,27 @@ tar -czvf storage_$(date +%Y%m%d).tar.gz ./volumes/
 3. 运行数据库迁移：`make -f Makefile.custom db-migrate`
 4. 运行测试：`make -f Makefile.custom test-custom`
 5. 重新构建镜像
+6. **核对附属官方镜像**（见下节）：`dify-plugin-daemon`、`dify-sandbox` 等与主仓库 compose 是否需对齐或保留二开 pin
+7. 测试/生产环境滚动更新：`make -f Makefile.custom prod-deploy`（或对应环境），确保 **plugin_daemon** 等与 compose 一致
+
+### 附属官方镜像对齐
+
+主栈 **api / web / worker** 与 Dify 版本号一致即可；下列镜像来自**独立仓库或独立发版节奏**，官方 `docker/docker-compose.yaml` 中的 tag **可能滞后于修复版本**，同步上游后不要只盯 `dify-api` / `dify-web`：
+
+| 镜像 / 服务 | 说明 |
+|-------------|------|
+| **plugin_daemon** (`PLUGIN_DAEMON_IMAGE`) | 独立仓库 [dify-plugin-daemon](https://github.com/langgenius/dify-plugin-daemon/releases)。二开 compose 可用高于官方 compose 的默认 tag（如修复插件安装 `context canceled`）。`Makefile.custom` 中 `UPSTREAM_PLUGIN_DAEMON_VERSION` 从 compose 解析；`prod-deploy` 会 **pull 并重建 plugin_daemon**。 |
+| **sandbox** (`SANDBOX_IMAGE`) | 自定义镜像时常用 `pull_policy: never`；`prod-deploy` **不拉取** sandbox，避免无远端标签导致失败。 |
+
+**同步上游后建议操作（约 1 分钟）：**
+
+```bash
+# 对比官方 compose 中与二开相关的镜像行（在已 fetch 上游的前提下）
+git show upstream/main:docker/docker-compose.yaml | grep -E 'dify-(api|web|sandbox|plugin-daemon):'
+grep -E 'dify-(api|web|sandbox|plugin-daemon):' docker/docker-compose.yaml
+```
+
+若官方仅 bump了 api/web 而 **plugin_daemon 仍旧**，保留二开 compose 中已验证的 `PLUGIN_DAEMON_IMAGE` 默认项，或按 Release Notes 上调；变更记入发布清单。
 
 ### 减少冲突
 
@@ -680,7 +702,8 @@ tar -czvf storage_$(date +%Y%m%d).tar.gz ./volumes/
 |------|----------|
 | API 启动报 *Multiple head revisions* | 上游与二开各自新增迁移未合并，需 merge migration |
 | API 启动报 *Can't locate revision* | 生产 `alembic_version` 与镜像内迁移 `revision` 不一致（常见于手工 stamp / 迁移文件改名未对齐） |
-| `compose pull` 失败 | 自定义 Sandbox 等镜像无远端仓库；应只拉取 API/Web/Worker 或使用 `pull_policy: never` |
+| `compose pull` / `prod-deploy` 失败 | 自定义 Sandbox 等镜像无远端仓库；compose 使用 `pull_policy: never`，且 `prod-deploy` 仅拉取 api / web / worker / worker_beat / **plugin_daemon**（不拉 sandbox） |
+| 插件安装报 `context canceled` / `failed to init environment` | **plugin_daemon** 镜像过旧；升级到 [dify-plugin-daemon Releases](https://github.com/langgenius/dify-plugin-daemon/releases) 中含修复的版本，并 `prod-deploy` 或单独重建该容器 |
 | `pnpm build` / 镜像构建失败 | MDX 中 `<i>`、破损的 JSX/模板字符串、合并冲突把文档结构打断 |
 | `git` 推送/合并困难 | `main`/`development`/`production` 被 force-push 后历史分叉，需约定以哪条线为基准再 cherry-pick 或合并 |
 
