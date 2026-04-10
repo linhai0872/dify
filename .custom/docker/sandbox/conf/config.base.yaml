@@ -2,6 +2,7 @@
 # 功能: 依赖管理 + 文件输入输出
 # 注意: syscall 白名单由 init-config.sh 根据架构自动追加
 # 文档: .custom/docs/development/README.md
+# 与 docker/volumes/sandbox/conf/config.yaml 保持同步（提交前请两边对齐）。
 
 app:
   port: 8194
@@ -12,8 +13,12 @@ max_workers: 4
 max_requests: 50
 worker_timeout: 15  # [CUSTOM] 扩展为 15s（支持复杂操作）
 
-python_path: /usr/local/bin/python3
+# 与上游 1.13.x Sandbox 默认一致（见官方镜像）；自定义构建可覆盖
+python_path: /opt/python/bin/python3
+nodejs_path: /usr/local/bin/node
 python_lib_path:
+  - /opt/python/lib
+  - /opt/python/lib/python3.10
   - /usr/local/lib/python3.10
   - /usr/lib/python3.10
   - /usr/lib/python3
@@ -27,7 +32,7 @@ python_lib_path:
   - /etc/hosts
   - /etc/resolv.conf
 
-enable_network: true
+enable_network: true  # please make sure there is no network risk in your environment
 
 proxy:
   socks5: ''

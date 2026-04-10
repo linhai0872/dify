@@ -8,7 +8,7 @@
 
 app:
   port: 8194
-  debug: True
+  debug: true
   key: dify-sandbox
 
 max_workers: 4
@@ -34,7 +34,7 @@ python_lib_path:
   - /etc/hosts
   - /etc/resolv.conf
 
-enable_network: True # please make sure there is no network risk in your environment
+enable_network: true  # please make sure there is no network risk in your environment
 
 proxy:
   socks5: ''
