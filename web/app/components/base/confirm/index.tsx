@@ -131,7 +131,7 @@ function Confirm({
               asChild={false}
               triggerClassName="w-full"
             >
-              <div ref={titleRef} className="title-2xl-semi-bold w-full truncate text-text-primary">
+              <div ref={titleRef} className="w-full truncate text-text-primary title-2xl-semi-bold">
                 {title}
               </div>
             </Tooltip>

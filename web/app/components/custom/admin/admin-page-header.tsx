@@ -47,11 +47,11 @@ const AdminPageHeader = ({
 
       {/* Title and subtitle */}
       <div className="min-w-0 grow">
-        <div className="system-md-semibold flex items-center gap-1 text-text-secondary">
+        <div className="flex items-center gap-1 text-text-secondary system-md-semibold">
           <span className="truncate">{title}</span>
         </div>
         {subtitle && (
-          <div className="system-xs-medium mt-1 text-text-tertiary">
+          <div className="mt-1 text-text-tertiary system-xs-medium">
             {subtitle}
           </div>
         )}

@@ -85,6 +85,7 @@ describe('EmbeddedChatbot Header', () => {
     },
     enable_trial_app: false,
     enable_explore_banner: false,
+    log_timezone: '',
   }
 
   const setupIframe = () => {

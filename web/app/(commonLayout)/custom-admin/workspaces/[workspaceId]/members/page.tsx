@@ -17,16 +17,24 @@ import {
   RiUserAddLine,
   RiUserLine,
 } from '@remixicon/react'
-import { useParams } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import Avatar from '@/app/components/base/avatar'
+import { Avatar } from '@/app/components/base/avatar'
 import Button from '@/app/components/base/button'
-import Confirm from '@/app/components/base/confirm'
-import Modal from '@/app/components/base/modal'
 import SearchInput from '@/app/components/base/search-input'
-import Toast from '@/app/components/base/toast'
+import {
+  AlertDialog,
+  AlertDialogActions,
+  AlertDialogCancelButton,
+  AlertDialogConfirmButton,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+} from '@/app/components/base/ui/alert-dialog'
+import { Dialog, DialogCloseButton, DialogContent, DialogTitle } from '@/app/components/base/ui/dialog'
+import { toast } from '@/app/components/base/ui/toast'
 import { AdminBreadcrumb, AdminEmptyState, AdminPageHeader, AdminTableSkeleton, RoleOperation } from '@/app/components/custom/admin'
+import { useParams } from '@/next/navigation'
 import {
   useAddWorkspaceMember,
   useAvailableUsers,
@@ -74,17 +82,17 @@ export default function WorkspaceMembersPage() {
           setSelectedUserId('')
           setSelectedRole('normal')
           setUserSearch('')
-          Toast.notify({ type: 'success', message: t('admin.memberAddSuccess', { ns: 'custom' }) })
+          toast.success(t('admin.memberAddSuccess', { ns: 'custom' }))
         },
-        onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+        onError: () => toast.error(t('admin.operationFailed', { ns: 'custom' })),
       },
     )
   }, [workspaceId, selectedUserId, selectedRole, addMember, t])
 
   const handleRoleChange = useCallback((userId: string, role: WorkspaceRole) => {
     updateRole({ workspaceId, userId, role }, {
-      onSuccess: () => Toast.notify({ type: 'success', message: t('admin.memberRoleUpdateSuccess', { ns: 'custom' }) }),
-      onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+      onSuccess: () => toast.success(t('admin.memberRoleUpdateSuccess', { ns: 'custom' })),
+      onError: () => toast.error(t('admin.operationFailed', { ns: 'custom' })),
     })
   }, [workspaceId, updateRole, t])
 
@@ -99,9 +107,9 @@ export default function WorkspaceMembersPage() {
         onSuccess: () => {
           setShowRemoveConfirm(false)
           setMemberToRemove(null)
-          Toast.notify({ type: 'success', message: t('admin.memberRemoveSuccess', { ns: 'custom' }) })
+          toast.success(t('admin.memberRemoveSuccess', { ns: 'custom' }))
         },
-        onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+        onError: () => toast.error(t('admin.operationFailed', { ns: 'custom' })),
       })
     }
   }, [workspaceId, memberToRemove, removeMember, t])
@@ -139,7 +147,7 @@ export default function WorkspaceMembersPage() {
       />
       {/* Workspace ID for reference */}
       {membersData?.workspace && (
-        <div className="system-xs-regular mb-3 text-text-quaternary">
+        <div className="mb-3 text-text-quaternary system-xs-regular">
           ID:
           {' '}
           {workspaceId}
@@ -149,16 +157,16 @@ export default function WorkspaceMembersPage() {
       {/* Members Table */}
       <div className="flex-1 overflow-auto rounded-xl border border-divider-subtle bg-components-panel-bg">
         <div className="flex min-w-[600px] items-center border-b border-divider-regular bg-background-section-burn py-[7px]">
-          <div className="system-xs-medium-uppercase grow px-4 text-text-tertiary">
+          <div className="grow px-4 text-text-tertiary system-xs-medium-uppercase">
             {t('admin.member', { ns: 'custom' })}
           </div>
-          <div className="system-xs-medium-uppercase w-[140px] shrink-0 px-3 text-text-tertiary">
+          <div className="w-[140px] shrink-0 px-3 text-text-tertiary system-xs-medium-uppercase">
             {t('admin.role', { ns: 'custom' })}
           </div>
-          <div className="system-xs-medium-uppercase w-[120px] shrink-0 text-text-tertiary">
+          <div className="w-[120px] shrink-0 text-text-tertiary system-xs-medium-uppercase">
             {t('admin.joined', { ns: 'custom' })}
           </div>
-          <div className="system-xs-medium-uppercase w-[100px] shrink-0 px-3 text-text-tertiary">
+          <div className="w-[100px] shrink-0 px-3 text-text-tertiary system-xs-medium-uppercase">
             {t('admin.actions', { ns: 'custom' })}
           </div>
         </div>
@@ -184,10 +192,10 @@ export default function WorkspaceMembersPage() {
                   membersData?.data?.map(member => (
                     <div key={member.id} className="flex border-b border-divider-subtle transition-colors hover:bg-state-base-hover">
                       <div className="flex grow items-center px-4 py-2">
-                        <Avatar avatar={member.avatar_url} name={member.name} size={32} className="mr-3" />
+                        <Avatar avatar={member.avatar_url} name={member.name} size="md" className="mr-3" />
                         <div className="min-w-0">
-                          <div className="system-sm-medium truncate text-text-secondary">{member.name}</div>
-                          <div className="system-xs-regular truncate text-text-tertiary">{member.email}</div>
+                          <div className="truncate text-text-secondary system-sm-medium">{member.name}</div>
+                          <div className="truncate text-text-tertiary system-xs-regular">{member.email}</div>
                         </div>
                       </div>
                       <div className="flex w-[140px] shrink-0 items-center">
@@ -199,7 +207,7 @@ export default function WorkspaceMembersPage() {
                         />
                       </div>
                       <div className="flex w-[120px] shrink-0 items-center">
-                        <span className="system-sm-regular text-text-tertiary">{formatDate(member.joined_at)}</span>
+                        <span className="text-text-tertiary system-sm-regular">{formatDate(member.joined_at)}</span>
                       </div>
                       <div className="flex w-[100px] shrink-0 items-center px-3">
                         <Button
@@ -218,102 +226,119 @@ export default function WorkspaceMembersPage() {
       </div>
 
       {/* Add Member Modal */}
-      <Modal
-        isShow={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        title={t('admin.addMember', { ns: 'custom' })}
-        closable
-      >
-        <div className="mt-4">
-          <div className="mb-4">
-            <label className="system-sm-medium mb-2 block text-text-secondary">
-              {t('admin.selectUser', { ns: 'custom' })}
-            </label>
-            <SearchInput
-              placeholder={t('admin.searchPlaceholder', { ns: 'custom' })}
-              value={userSearch}
-              onChange={setUserSearch}
-            />
-            <div className="mt-2 max-h-40 overflow-auto rounded-lg border border-divider-subtle">
-              {availableUsersData?.data?.length === 0
-                ? (
-                    <div className="system-sm-regular px-3 py-4 text-center text-text-tertiary">
-                      {t('admin.noAvailableUsers', { ns: 'custom' })}
-                    </div>
-                  )
-                : (
-                    availableUsersData?.data?.map(user => (
-                      <div
-                        key={user.id}
-                        onClick={() => setSelectedUserId(user.id)}
-                        className={cn(
-                          'flex cursor-pointer items-center gap-2 px-3 py-2 hover:bg-state-base-hover',
-                          selectedUserId === user.id && 'bg-state-accent-hover ring-1 ring-inset ring-components-input-border-active',
-                        )}
-                      >
-                        <Avatar avatar={user.avatar_url} name={user.name} size={24} />
-                        <div className="min-w-0 flex-1">
-                          <div className="system-sm-medium truncate text-text-primary">{user.name}</div>
-                          <div className="system-xs-regular truncate text-text-tertiary">{user.email}</div>
-                        </div>
+      <Dialog open={showAddModal} onOpenChange={open => !open && setShowAddModal(false)}>
+        <DialogContent className="max-w-[520px]">
+          <DialogCloseButton />
+          <DialogTitle className="text-text-primary title-2xl-semi-bold">
+            {t('admin.addMember', { ns: 'custom' })}
+          </DialogTitle>
+          <div className="mt-4">
+            <div className="mb-4">
+              <label className="mb-2 block text-text-secondary system-sm-medium">
+                {t('admin.selectUser', { ns: 'custom' })}
+              </label>
+              <SearchInput
+                placeholder={t('admin.searchPlaceholder', { ns: 'custom' })}
+                value={userSearch}
+                onChange={setUserSearch}
+              />
+              <div className="mt-2 max-h-40 overflow-auto rounded-lg border border-divider-subtle">
+                {availableUsersData?.data?.length === 0
+                  ? (
+                      <div className="px-3 py-4 text-center text-text-tertiary system-sm-regular">
+                        {t('admin.noAvailableUsers', { ns: 'custom' })}
                       </div>
-                    ))
-                  )}
+                    )
+                  : (
+                      availableUsersData?.data?.map(user => (
+                        <div
+                          key={user.id}
+                          onClick={() => setSelectedUserId(user.id)}
+                          className={cn(
+                            'flex cursor-pointer items-center gap-2 px-3 py-2 hover:bg-state-base-hover',
+                            selectedUserId === user.id && 'bg-state-accent-hover ring-1 ring-inset ring-components-input-border-active',
+                          )}
+                        >
+                          <Avatar avatar={user.avatar_url} name={user.name} size="sm" />
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-text-primary system-sm-medium">{user.name}</div>
+                            <div className="truncate text-text-tertiary system-xs-regular">{user.email}</div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="mb-2 block text-text-secondary system-sm-medium">
+                {t('admin.selectRole', { ns: 'custom' })}
+              </label>
+              <div className="space-y-1 rounded-lg border border-divider-subtle p-1">
+                {workspaceRolesWithTips.map(role => (
+                  <div
+                    key={role.value}
+                    onClick={() => setSelectedRole(role.value as WorkspaceRole)}
+                    className={cn(
+                      'cursor-pointer rounded-lg px-3 py-2 transition-colors hover:bg-state-base-hover',
+                      selectedRole === role.value && 'bg-state-accent-hover ring-1 ring-inset ring-components-input-border-active',
+                    )}
+                  >
+                    <div className="text-text-secondary system-sm-medium">{role.label}</div>
+                    {role.description && (
+                      <div className="text-text-tertiary system-xs-regular">{role.description}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setShowAddModal(false)}>
+                {t('admin.cancel', { ns: 'custom' })}
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleAddMember}
+                disabled={!selectedUserId || isAdding}
+                loading={isAdding}
+              >
+                {t('admin.addMember', { ns: 'custom' })}
+              </Button>
             </div>
           </div>
-
-          <div className="mb-6">
-            <label className="system-sm-medium mb-2 block text-text-secondary">
-              {t('admin.selectRole', { ns: 'custom' })}
-            </label>
-            <div className="space-y-1 rounded-lg border border-divider-subtle p-1">
-              {workspaceRolesWithTips.map(role => (
-                <div
-                  key={role.value}
-                  onClick={() => setSelectedRole(role.value as WorkspaceRole)}
-                  className={cn(
-                    'cursor-pointer rounded-lg px-3 py-2 transition-colors hover:bg-state-base-hover',
-                    selectedRole === role.value && 'bg-state-accent-hover ring-1 ring-inset ring-components-input-border-active',
-                  )}
-                >
-                  <div className="system-sm-medium text-text-secondary">{role.label}</div>
-                  {role.description && (
-                    <div className="system-xs-regular text-text-tertiary">{role.description}</div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setShowAddModal(false)}>
-              {t('admin.cancel', { ns: 'custom' })}
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleAddMember}
-              disabled={!selectedUserId || isAdding}
-              loading={isAdding}
-            >
-              {t('admin.addMember', { ns: 'custom' })}
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        </DialogContent>
+      </Dialog>
 
       {/* Remove Confirmation */}
-      <Confirm
-        isShow={showRemoveConfirm}
-        type="danger"
-        title={t('admin.confirmRemoveMemberTitle', { ns: 'custom' })}
-        content={t('admin.confirmRemoveMember', { ns: 'custom', name: memberToRemove?.name || '' })}
-        onConfirm={handleConfirmRemove}
-        onCancel={() => {
-          setShowRemoveConfirm(false)
-          setMemberToRemove(null)
+      <AlertDialog
+        open={showRemoveConfirm}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowRemoveConfirm(false)
+            setMemberToRemove(null)
+          }
         }}
-        isLoading={isRemoving}
-      />
+      >
+        <AlertDialogContent>
+          <div className="flex flex-col items-start gap-2 self-stretch pb-4 pl-6 pr-6 pt-6">
+            <AlertDialogTitle className="w-full text-text-primary title-2xl-semi-bold">
+              {t('admin.confirmRemoveMemberTitle', { ns: 'custom' })}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="w-full whitespace-pre-wrap break-words text-text-tertiary system-md-regular">
+              {t('admin.confirmRemoveMember', { ns: 'custom', name: memberToRemove?.name || '' })}
+            </AlertDialogDescription>
+          </div>
+          <AlertDialogActions>
+            <AlertDialogCancelButton disabled={isRemoving}>
+              {t('operation.cancel', { ns: 'common' })}
+            </AlertDialogCancelButton>
+            <AlertDialogConfirmButton loading={isRemoving} disabled={isRemoving} onClick={handleConfirmRemove}>
+              {t('operation.confirm', { ns: 'common' })}
+            </AlertDialogConfirmButton>
+          </AlertDialogActions>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

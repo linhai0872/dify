@@ -3,7 +3,7 @@
 import type { FC } from 'react'
 import { useTranslation } from 'react-i18next'
 import SearchInput from '@/app/components/base/search-input'
-import { PortalSelect } from '@/app/components/base/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/base/ui/select'
 
 export type UserFiltersProps = {
   search: string
@@ -37,20 +37,34 @@ const UserFilters: FC<UserFiltersProps> = ({
         onChange={onSearchChange}
       />
       <div className="w-[160px] shrink-0">
-        <PortalSelect
-          value={roleFilter}
-          items={roleFilterOptions}
-          onSelect={item => onRoleFilterChange(item.value as string)}
-          placeholder={t('admin.filterByRole', { ns: 'custom' })}
-        />
+        <Select
+          value={roleFilter || undefined}
+          onValueChange={v => onRoleFilterChange(v ?? '')}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder={t('admin.filterByRole', { ns: 'custom' })} />
+          </SelectTrigger>
+          <SelectContent>
+            {roleFilterOptions.map(opt => (
+              <SelectItem key={opt.value} value={opt.value}>{opt.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="w-[140px] shrink-0">
-        <PortalSelect
-          value={statusFilter}
-          items={statusFilterOptions}
-          onSelect={item => onStatusFilterChange(item.value as string)}
-          placeholder={t('admin.filterByStatus', { ns: 'custom' })}
-        />
+        <Select
+          value={statusFilter || undefined}
+          onValueChange={v => onStatusFilterChange(v ?? '')}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder={t('admin.filterByStatus', { ns: 'custom' })} />
+          </SelectTrigger>
+          <SelectContent>
+            {statusFilterOptions.map(opt => (
+              <SelectItem key={opt.value} value={opt.value}>{opt.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   )

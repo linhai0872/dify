@@ -52,7 +52,7 @@ const StatusBadge: FC<StatusBadgeProps> = ({
   return (
     <span
       className={cn(
-        'system-xs-medium inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-0.5',
+        'inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-0.5 system-xs-medium',
         config.bg,
         config.text,
         className,

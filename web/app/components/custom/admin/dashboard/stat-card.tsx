@@ -33,7 +33,7 @@ const StatCard: FC<StatCardProps> = ({
       </div>
       <div className="min-w-0">
         <div className="system-2xl-semibold text-text-primary">{value}</div>
-        <div className="system-xs-regular text-text-tertiary">{label}</div>
+        <div className="text-text-tertiary system-xs-regular">{label}</div>
       </div>
     </div>
   )

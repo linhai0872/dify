@@ -7,10 +7,10 @@ import dayjs from 'dayjs'
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  PortalToFollowElem,
-  PortalToFollowElemContent,
-  PortalToFollowElemTrigger,
-} from '@/app/components/base/portal-to-follow-elem'
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/app/components/base/ui/popover'
 import { cn } from '@/utils/classnames'
 
 type CustomDatetimeRangePickerProps = {
@@ -77,103 +77,92 @@ const CustomDatetimeRangePicker = ({
     setIsOpen(false)
   }, [onClear])
 
-  const handleTriggerClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation()
-    handleOpenChange(!isOpen)
-  }, [isOpen, handleOpenChange])
-
   const hasValue = startDate && endDate
   const displayText = hasValue
     ? `${startDate.format(displayFormat)} ~ ${endDate.format(displayFormat)}`
     : ''
 
   return (
-    <PortalToFollowElem
+    <Popover
       open={isOpen}
       onOpenChange={handleOpenChange}
-      placement="bottom-start"
     >
-      <PortalToFollowElemTrigger>
-        <div
-          className={cn(
-            'group flex h-9 cursor-pointer items-center gap-x-1 rounded-lg border-0 bg-components-input-bg-normal pl-3 pr-2 transition-colors hover:bg-state-base-hover-alt',
-            hasValue ? 'w-auto' : 'w-[220px]',
-          )}
-          onClick={handleTriggerClick}
-        >
-          <RiCalendarLine className="h-4 w-4 shrink-0 text-text-quaternary" />
-          {hasValue
-            ? (
-                <span className="system-sm-regular truncate text-components-input-text-filled">
-                  {displayText}
-                </span>
-              )
-            : (
-                <span className="system-sm-regular text-components-input-text-placeholder">
-                  {t('overview.dateTimeRange.placeholder', { ns: 'custom' })}
-                </span>
-              )}
-          {hasValue && (
-            <RiCloseLine
-              className="ml-0.5 hidden h-3.5 w-3.5 shrink-0 text-text-quaternary hover:text-text-secondary group-hover:block"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleClear()
-              }}
+      <PopoverTrigger
+        className={cn(
+          'group flex h-9 cursor-pointer items-center gap-x-1 rounded-lg border-0 bg-components-input-bg-normal pl-3 pr-2 transition-colors hover:bg-state-base-hover-alt',
+          hasValue ? 'w-auto' : 'w-[220px]',
+        )}
+      >
+        <RiCalendarLine className="h-4 w-4 shrink-0 text-text-quaternary" />
+        {hasValue
+          ? (
+              <span className="truncate text-components-input-text-filled system-sm-regular">
+                {displayText}
+              </span>
+            )
+          : (
+              <span className="text-components-input-text-placeholder system-sm-regular">
+                {t('overview.dateTimeRange.placeholder', { ns: 'custom' })}
+              </span>
+            )}
+        {hasValue && (
+          <RiCloseLine
+            className="ml-0.5 hidden h-3.5 w-3.5 shrink-0 text-text-quaternary hover:text-text-secondary group-hover:block"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleClear()
+            }}
+          />
+        )}
+      </PopoverTrigger>
+      <PopoverContent placement="bottom-start" sideOffset={4} popupClassName="w-[320px] p-3 shadow-lg shadow-shadow-shadow-5">
+        <div className="mb-3 flex flex-col gap-2">
+          <div>
+            <label className="mb-1 block text-text-secondary system-xs-medium">
+              {t('overview.dateTimeRange.startTime', { ns: 'custom' })}
+            </label>
+            <input
+              type="datetime-local"
+              className="w-full rounded-lg border-[0.5px] border-components-input-border-active bg-components-input-bg-normal px-2 py-1.5 text-components-input-text-filled outline-none transition-colors system-xs-regular focus:border-components-input-border-active focus:shadow-xs"
+              value={localStart}
+              max={maxDateTime}
+              onChange={e => setLocalStart(e.target.value)}
             />
-          )}
-        </div>
-      </PortalToFollowElemTrigger>
-      <PortalToFollowElemContent className="z-[11]">
-        <div className="mt-1 w-[320px] rounded-xl border-[0.5px] border-components-panel-border bg-components-panel-bg p-3 shadow-lg shadow-shadow-shadow-5">
-          <div className="mb-3 flex flex-col gap-2">
-            <div>
-              <label className="system-xs-medium mb-1 block text-text-secondary">
-                {t('overview.dateTimeRange.startTime', { ns: 'custom' })}
-              </label>
-              <input
-                type="datetime-local"
-                className="system-xs-regular w-full rounded-lg border-[0.5px] border-components-input-border-active bg-components-input-bg-normal px-2 py-1.5 text-components-input-text-filled outline-none transition-colors focus:border-components-input-border-active focus:shadow-xs"
-                value={localStart}
-                max={maxDateTime}
-                onChange={e => setLocalStart(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="system-xs-medium mb-1 block text-text-secondary">
-                {t('overview.dateTimeRange.endTime', { ns: 'custom' })}
-              </label>
-              <input
-                type="datetime-local"
-                className="system-xs-regular w-full rounded-lg border-[0.5px] border-components-input-border-active bg-components-input-bg-normal px-2 py-1.5 text-components-input-text-filled outline-none transition-colors focus:border-components-input-border-active focus:shadow-xs"
-                value={localEnd}
-                max={maxDateTime}
-                onChange={e => setLocalEnd(e.target.value)}
-              />
-            </div>
           </div>
-          {error && (
-            <p className="system-xs-regular mb-2 text-text-destructive">{error}</p>
-          )}
-          <div className="flex items-center justify-end gap-2">
-            <button
-              type="button"
-              className="system-xs-medium rounded-lg px-3 py-1.5 text-text-secondary transition-colors hover:bg-state-base-hover"
-              onClick={handleClear}
-            >
-              {t('overview.dateTimeRange.clear', { ns: 'custom' })}
-            </button>
-            <button
-              type="button"
-              className="system-xs-medium rounded-lg bg-primary-600 px-3 py-1.5 text-white transition-colors hover:bg-primary-700"
-              onClick={handleConfirm}
-            >
-              {t('overview.dateTimeRange.confirm', { ns: 'custom' })}
-            </button>
+          <div>
+            <label className="mb-1 block text-text-secondary system-xs-medium">
+              {t('overview.dateTimeRange.endTime', { ns: 'custom' })}
+            </label>
+            <input
+              type="datetime-local"
+              className="w-full rounded-lg border-[0.5px] border-components-input-border-active bg-components-input-bg-normal px-2 py-1.5 text-components-input-text-filled outline-none transition-colors system-xs-regular focus:border-components-input-border-active focus:shadow-xs"
+              value={localEnd}
+              max={maxDateTime}
+              onChange={e => setLocalEnd(e.target.value)}
+            />
           </div>
         </div>
-      </PortalToFollowElemContent>
-    </PortalToFollowElem>
+        {error && (
+          <p className="mb-2 text-text-destructive system-xs-regular">{error}</p>
+        )}
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            className="rounded-lg px-3 py-1.5 text-text-secondary transition-colors system-xs-medium hover:bg-state-base-hover"
+            onClick={handleClear}
+          >
+            {t('overview.dateTimeRange.clear', { ns: 'custom' })}
+          </button>
+          <button
+            type="button"
+            className="rounded-lg bg-primary-600 px-3 py-1.5 text-white transition-colors system-xs-medium hover:bg-primary-700"
+            onClick={handleConfirm}
+          >
+            {t('overview.dateTimeRange.confirm', { ns: 'custom' })}
+          </button>
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }
 

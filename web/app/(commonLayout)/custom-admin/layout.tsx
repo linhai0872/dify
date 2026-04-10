@@ -18,14 +18,14 @@ import {
   RiShieldLine,
   RiTeamLine,
 } from '@remixicon/react'
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import Avatar from '@/app/components/base/avatar'
+import { Avatar } from '@/app/components/base/avatar'
 import { RoleBadge } from '@/app/components/custom/admin'
 import { useAppContext } from '@/context/app-context'
 import { useCurrentSystemRole, useIsSystemAdmin, useIsTenantManager } from '@/hooks/custom/use-custom-system-role'
+import Link from '@/next/link'
+import { usePathname, useRouter } from '@/next/navigation'
 import { cn } from '@/utils/classnames'
 import { getSystemRoleLabel } from '@/utils/custom/admin-labels'
 
@@ -110,7 +110,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <RiShieldLine className="size-4 text-util-colors-blue-brand-blue-brand-600" />
           </div>
           <div>
-            <h1 className="system-md-semibold text-text-primary">
+            <h1 className="text-text-primary system-md-semibold">
               {t('admin.systemAdmin', { ns: 'custom' })}
             </h1>
           </div>
@@ -140,13 +140,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 />
                 <div className="min-w-0">
                   <span className={cn(
-                    'system-sm-medium block',
+                    'block system-sm-medium',
                     pathname.startsWith(item.href) ? 'text-text-primary' : 'text-text-secondary',
                   )}
                   >
                     {t(item.labelKey, { ns: 'custom' })}
                   </span>
-                  <span className="system-xs-regular block text-text-quaternary">
+                  <span className="block text-text-quaternary system-xs-regular">
                     {t(item.descKey, { ns: 'custom' })}
                   </span>
                 </div>
@@ -158,9 +158,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         {/* Current User Info */}
         <div className="border-t border-divider-subtle px-3 py-3">
           <div className="flex items-center gap-2">
-            <Avatar avatar={userProfile.avatar_url} name={userProfile.name} size={28} />
+            <Avatar avatar={userProfile.avatar_url} name={userProfile.name} size="sm" />
             <div className="min-w-0 flex-1">
-              <div className="system-xs-medium truncate text-text-secondary">{userProfile.name}</div>
+              <div className="truncate text-text-secondary system-xs-medium">{userProfile.name}</div>
               <RoleBadge role={roleData?.system_role || 'user'} label={getSystemRoleLabel(roleData?.system_role || 'user', t)} type="system" />
             </div>
           </div>

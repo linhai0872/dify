@@ -15,12 +15,12 @@ import {
   RiTeamLine,
   RiUserLine,
 } from '@remixicon/react'
-import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
 import { RoleBadge } from '@/app/components/custom/admin'
 import StatCard from '@/app/components/custom/admin/dashboard/stat-card'
 import { useAppContext } from '@/context/app-context'
 import { useCurrentSystemRole } from '@/hooks/custom/use-custom-system-role'
+import Link from '@/next/link'
 import { useAdminDashboard } from '@/service/custom/admin-dashboard'
 import { getSystemRoleLabel } from '@/utils/custom/admin-labels'
 
@@ -34,7 +34,7 @@ export default function DashboardPage() {
     <div className="flex h-full flex-col">
       {/* Welcome Section */}
       <div className="mb-6">
-        <h1 className="system-xl-semibold text-text-primary">
+        <h1 className="text-text-primary system-xl-semibold">
           {t('admin.welcomeBack', { ns: 'custom' })}
           ,
           {userProfile.name}
@@ -82,7 +82,7 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div>
-        <h2 className="system-md-semibold mb-3 text-text-primary">
+        <h2 className="mb-3 text-text-primary system-md-semibold">
           {t('admin.quickActions', { ns: 'custom' })}
         </h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -94,10 +94,10 @@ export default function DashboardPage() {
               <RiGroupLine className="size-4 text-util-colors-blue-brand-blue-brand-600" />
             </div>
             <div>
-              <div className="system-sm-medium text-text-secondary">
+              <div className="text-text-secondary system-sm-medium">
                 {t('admin.userManagement', { ns: 'custom' })}
               </div>
-              <div className="system-xs-regular text-text-tertiary">
+              <div className="text-text-tertiary system-xs-regular">
                 {t('admin.manageAccountsAndRoles', { ns: 'custom' })}
               </div>
             </div>
@@ -111,10 +111,10 @@ export default function DashboardPage() {
               <RiTeamLine className="size-4 text-util-colors-violet-violet-600" />
             </div>
             <div>
-              <div className="system-sm-medium text-text-secondary">
+              <div className="text-text-secondary system-sm-medium">
                 {t('admin.workspaceManagement', { ns: 'custom' })}
               </div>
-              <div className="system-xs-regular text-text-tertiary">
+              <div className="text-text-tertiary system-xs-regular">
                 {t('admin.manageTeamsAndMembers', { ns: 'custom' })}
               </div>
             </div>

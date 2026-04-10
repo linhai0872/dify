@@ -5,9 +5,9 @@ import type { RoleOption } from '@/app/components/custom/admin'
 import type { AdminUser, SystemRole } from '@/models/custom/admin'
 import { RiDeleteBinLine } from '@remixicon/react'
 import { useTranslation } from 'react-i18next'
-import Avatar from '@/app/components/base/avatar'
+import { Avatar } from '@/app/components/base/avatar'
 import Checkbox from '@/app/components/base/checkbox'
-import Tooltip from '@/app/components/base/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/components/base/ui/tooltip'
 import { RoleOperation, StatusBadge } from '@/app/components/custom/admin'
 import { getStatusLabel } from '@/utils/custom/admin-labels'
 import { formatDate } from '@/utils/custom/format-date'
@@ -56,10 +56,10 @@ const UserTableRow: FC<UserTableRowProps> = ({
         />
       </div>
       <div className="flex grow items-center px-4 py-2">
-        <Avatar avatar={user.avatar_url} name={user.name} size={32} className="mr-3" />
+        <Avatar avatar={user.avatar_url} name={user.name} size="md" className="mr-3" />
         <div className="min-w-0">
-          <div className="system-sm-medium truncate text-text-secondary">{user.name}</div>
-          <div className="system-xs-regular truncate text-text-tertiary">{user.email}</div>
+          <div className="truncate text-text-secondary system-sm-medium">{user.name}</div>
+          <div className="truncate text-text-tertiary system-xs-regular">{user.email}</div>
         </div>
       </div>
       <div className="flex w-[140px] shrink-0 items-center">
@@ -77,37 +77,55 @@ const UserTableRow: FC<UserTableRowProps> = ({
         />
       </div>
       <div className="flex w-[120px] shrink-0 items-center px-3">
-        <span className="system-sm-regular text-text-secondary">
+        <span className="text-text-secondary system-sm-regular">
           {t('admin.workspaceCount', { ns: 'custom', count: user.workspaces?.length || 0 })}
         </span>
       </div>
       <div className="flex w-[104px] shrink-0 items-center">
-        <span className="system-sm-regular text-text-tertiary">{formatDate(user.last_active_at)}</span>
+        <span className="text-text-tertiary system-sm-regular">{formatDate(user.last_active_at)}</span>
       </div>
       <div className="flex w-[100px] shrink-0 items-center gap-2 px-3">
-        <Tooltip popupContent={user.status === 'active' ? t('admin.disable', { ns: 'custom' }) : t('admin.enable', { ns: 'custom' })}>
-          <button
-            onClick={() => onStatusClick(user)}
-            disabled={isUpdatingStatus || disabled}
-            className={`system-xs-medium rounded-md px-2 py-1 transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-              user.status === 'active'
-                ? 'text-text-warning hover:bg-state-warning-hover'
-                : 'text-util-colors-blue-brand-blue-brand-600 hover:bg-state-accent-hover'
-            }`}
-          >
-            {user.status === 'active'
-              ? t('admin.disable', { ns: 'custom' })
-              : t('admin.enable', { ns: 'custom' })}
-          </button>
+        <Tooltip>
+          <TooltipTrigger
+            delay={0}
+            render={(
+              <button
+                type="button"
+                onClick={() => onStatusClick(user)}
+                disabled={isUpdatingStatus || disabled}
+                className={`rounded-md px-2 py-1 transition-colors system-xs-medium disabled:cursor-not-allowed disabled:opacity-50 ${
+                  user.status === 'active'
+                    ? 'text-text-warning hover:bg-state-warning-hover'
+                    : 'text-util-colors-blue-brand-blue-brand-600 hover:bg-state-accent-hover'
+                }`}
+              >
+                {user.status === 'active'
+                  ? t('admin.disable', { ns: 'custom' })
+                  : t('admin.enable', { ns: 'custom' })}
+              </button>
+            )}
+          />
+          <TooltipContent>
+            {user.status === 'active' ? t('admin.disable', { ns: 'custom' }) : t('admin.enable', { ns: 'custom' })}
+          </TooltipContent>
         </Tooltip>
-        <Tooltip popupContent={t('admin.deleteUser', { ns: 'custom' })}>
-          <button
-            onClick={() => onDeleteClick(user)}
-            disabled={isDeleting || disabled}
-            className="rounded-md p-1 text-text-tertiary transition-all hover:bg-state-destructive-hover hover:text-text-destructive disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <RiDeleteBinLine className="size-4" />
-          </button>
+        <Tooltip>
+          <TooltipTrigger
+            delay={0}
+            render={(
+              <button
+                type="button"
+                onClick={() => onDeleteClick(user)}
+                disabled={isDeleting || disabled}
+                className="rounded-md p-1 text-text-tertiary transition-all hover:bg-state-destructive-hover hover:text-text-destructive disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <RiDeleteBinLine className="size-4" />
+              </button>
+            )}
+          />
+          <TooltipContent>
+            {t('admin.deleteUser', { ns: 'custom' })}
+          </TooltipContent>
         </Tooltip>
       </div>
     </div>

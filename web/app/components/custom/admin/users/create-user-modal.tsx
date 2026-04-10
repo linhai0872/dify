@@ -6,8 +6,8 @@ import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Button from '@/app/components/base/button'
 import Input from '@/app/components/base/input'
-import Modal from '@/app/components/base/modal'
-import { PortalSelect } from '@/app/components/base/select'
+import { Dialog, DialogCloseButton, DialogContent, DialogTitle } from '@/app/components/base/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/base/ui/select'
 
 export type CreateUserModalProps = {
   isShow: boolean
@@ -63,96 +63,103 @@ const CreateUserModal: FC<CreateUserModalProps> = ({
     onSubmit({ name: name.trim(), email: email.trim(), password, systemRole: role })
   }, [isValid, name, email, password, role, onSubmit])
 
+  const roleItems = useMemo(() => [
+    { value: 'user' as const, name: t('admin.systemRoleUser', { ns: 'custom' }) },
+    { value: 'tenant_manager' as const, name: t('admin.systemRoleTenantManager', { ns: 'custom' }) },
+    { value: 'system_admin' as const, name: t('admin.systemRoleSystemAdmin', { ns: 'custom' }) },
+  ], [t])
+
   return (
-    <Modal
-      isShow={isShow}
-      onClose={handleClose}
-      title={t('admin.createUser', { ns: 'custom' })}
-      closable
-    >
-      <div className="mt-4 space-y-4">
-        <div>
-          <label className="system-sm-medium mb-2 block text-text-secondary">
-            {t('admin.userName', { ns: 'custom' })}
-          </label>
-          <Input
-            value={name}
-            onChange={e => setName(e.target.value)}
-            onBlur={() => setTouched(prev => ({ ...prev, name: true }))}
-            placeholder={t('admin.userNamePlaceholder', { ns: 'custom' })}
-          />
-          {errors.name && (
-            <p className="system-xs-regular mt-1 text-text-destructive">{errors.name}</p>
-          )}
-        </div>
-        <div>
-          <label className="system-sm-medium mb-2 block text-text-secondary">
-            {t('admin.userEmail', { ns: 'custom' })}
-          </label>
-          <Input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            onBlur={() => setTouched(prev => ({ ...prev, email: true }))}
-            placeholder={t('admin.userEmailPlaceholder', { ns: 'custom' })}
-          />
-          {errors.email && (
-            <p className="system-xs-regular mt-1 text-text-destructive">{errors.email}</p>
-          )}
-        </div>
-        <div>
-          <label className="system-sm-medium mb-2 block text-text-secondary">
-            {t('admin.userPassword', { ns: 'custom' })}
-          </label>
-          <Input
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            onBlur={() => setTouched(prev => ({ ...prev, password: true }))}
-            placeholder={t('admin.userPasswordPlaceholder', { ns: 'custom' })}
-          />
-          <div className="mt-1 flex items-center justify-between">
-            {errors.password
-              ? <p className="system-xs-regular text-text-destructive">{errors.password}</p>
-              : <span />}
-            <span className="system-xs-regular text-text-quaternary">
-              {password.length}
-              /
-              {MIN_PASSWORD_LENGTH}
-              +
-            </span>
+    <Dialog open={isShow} onOpenChange={open => !open && handleClose()}>
+      <DialogContent className="max-w-[480px]">
+        <DialogCloseButton />
+        <DialogTitle className="text-text-primary title-2xl-semi-bold">
+          {t('admin.createUser', { ns: 'custom' })}
+        </DialogTitle>
+        <div className="mt-4 space-y-4">
+          <div>
+            <label className="mb-2 block text-text-secondary system-sm-medium">
+              {t('admin.userName', { ns: 'custom' })}
+            </label>
+            <Input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              onBlur={() => setTouched(prev => ({ ...prev, name: true }))}
+              placeholder={t('admin.userNamePlaceholder', { ns: 'custom' })}
+            />
+            {errors.name && (
+              <p className="mt-1 text-text-destructive system-xs-regular">{errors.name}</p>
+            )}
+          </div>
+          <div>
+            <label className="mb-2 block text-text-secondary system-sm-medium">
+              {t('admin.userEmail', { ns: 'custom' })}
+            </label>
+            <Input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              onBlur={() => setTouched(prev => ({ ...prev, email: true }))}
+              placeholder={t('admin.userEmailPlaceholder', { ns: 'custom' })}
+            />
+            {errors.email && (
+              <p className="mt-1 text-text-destructive system-xs-regular">{errors.email}</p>
+            )}
+          </div>
+          <div>
+            <label className="mb-2 block text-text-secondary system-sm-medium">
+              {t('admin.userPassword', { ns: 'custom' })}
+            </label>
+            <Input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              onBlur={() => setTouched(prev => ({ ...prev, password: true }))}
+              placeholder={t('admin.userPasswordPlaceholder', { ns: 'custom' })}
+            />
+            <div className="mt-1 flex items-center justify-between">
+              {errors.password
+                ? <p className="text-text-destructive system-xs-regular">{errors.password}</p>
+                : <span />}
+              <span className="text-text-quaternary system-xs-regular">
+                {password.length}
+                /
+                {MIN_PASSWORD_LENGTH}
+                +
+              </span>
+            </div>
+          </div>
+          <div>
+            <label className="mb-2 block text-text-secondary system-sm-medium">
+              {t('admin.systemRoleLabel', { ns: 'custom' })}
+            </label>
+            <Select value={role} onValueChange={v => setRole(v as SystemRole)}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {roleItems.map(item => (
+                  <SelectItem key={item.value} value={item.value}>{item.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={handleClose}>
+              {t('admin.cancel', { ns: 'custom' })}
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSubmit}
+              disabled={!isValid || isLoading}
+              loading={isLoading}
+            >
+              {t('admin.createUser', { ns: 'custom' })}
+            </Button>
           </div>
         </div>
-        <div>
-          <label className="system-sm-medium mb-2 block text-text-secondary">
-            {t('admin.systemRoleLabel', { ns: 'custom' })}
-          </label>
-          <PortalSelect
-            value={role}
-            items={[
-              { value: 'user', name: t('admin.systemRoleUser', { ns: 'custom' }) },
-              { value: 'tenant_manager', name: t('admin.systemRoleTenantManager', { ns: 'custom' }) },
-              { value: 'system_admin', name: t('admin.systemRoleSystemAdmin', { ns: 'custom' }) },
-            ]}
-            onSelect={item => setRole(item.value as SystemRole)}
-            popupClassName="w-full !z-[70]"
-          />
-        </div>
-        <div className="flex justify-end gap-2 pt-2">
-          <Button variant="secondary" onClick={handleClose}>
-            {t('admin.cancel', { ns: 'custom' })}
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handleSubmit}
-            disabled={!isValid || isLoading}
-            loading={isLoading}
-          >
-            {t('admin.createUser', { ns: 'custom' })}
-          </Button>
-        </div>
-      </div>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   )
 }
 

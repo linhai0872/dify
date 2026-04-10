@@ -19,19 +19,27 @@ import {
   RiGroupLine,
   RiTeamLine,
 } from '@remixicon/react'
-import Link from 'next/link'
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Button from '@/app/components/base/button'
-import Confirm from '@/app/components/base/confirm'
 import Input from '@/app/components/base/input'
-import Modal from '@/app/components/base/modal'
 import Pagination from '@/app/components/base/pagination'
 import SearchInput from '@/app/components/base/search-input'
-import Toast from '@/app/components/base/toast'
+import {
+  AlertDialog,
+  AlertDialogActions,
+  AlertDialogCancelButton,
+  AlertDialogConfirmButton,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+} from '@/app/components/base/ui/alert-dialog'
+import { Dialog, DialogCloseButton, DialogContent, DialogTitle } from '@/app/components/base/ui/dialog'
+import { toast } from '@/app/components/base/ui/toast'
 import { AdminEmptyState, AdminPageHeader } from '@/app/components/custom/admin'
 import { useDebouncedValue } from '@/hooks/custom/use-custom-debounced-value'
 import { useIsSystemAdmin } from '@/hooks/custom/use-custom-system-role'
+import Link from '@/next/link'
 import { useAdminWorkspaces, useCreateWorkspace, useDeleteWorkspace } from '@/service/custom/admin-member'
 import { formatDate } from '@/utils/custom/format-date'
 
@@ -68,9 +76,9 @@ export default function WorkspacesPage() {
         onSuccess: () => {
           setShowCreateModal(false)
           setNewWorkspaceName('')
-          Toast.notify({ type: 'success', message: t('admin.workspaceCreateSuccess', { ns: 'custom' }) })
+          toast.success(t('admin.workspaceCreateSuccess', { ns: 'custom' }))
         },
-        onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+        onError: () => toast.error(t('admin.operationFailed', { ns: 'custom' })),
       },
     )
   }, [newWorkspaceName, createWorkspace, t])
@@ -89,9 +97,9 @@ export default function WorkspacesPage() {
         {
           onSuccess: () => {
             setShowDeleteConfirm(false)
-            Toast.notify({ type: 'success', message: t('admin.workspaceDeleteSuccess', { ns: 'custom' }) })
+            toast.success(t('admin.workspaceDeleteSuccess', { ns: 'custom' }))
           },
-          onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+          onError: () => toast.error(t('admin.operationFailed', { ns: 'custom' })),
         },
       )
     }
@@ -181,7 +189,7 @@ export default function WorkspacesPage() {
                               if (!workspace.is_default && workspace.member_count <= 1)
                                 handleDeleteClick(e, workspace)
                               else if (workspace.is_default)
-                                Toast.notify({ type: 'warning', message: t('admin.cannotDeleteDefaultWorkspace', { ns: 'custom' }) })
+                                toast.warning(t('admin.cannotDeleteDefaultWorkspace', { ns: 'custom' }))
                             }}
                             className={`rounded-md p-1 opacity-0 transition-all group-hover:opacity-100 ${
                               !workspace.is_default && workspace.member_count <= 1
@@ -200,7 +208,7 @@ export default function WorkspacesPage() {
                         </div>
                       </div>
 
-                      <h3 className="system-md-semibold mb-1 text-text-primary">{workspace.name}</h3>
+                      <h3 className="mb-1 text-text-primary system-md-semibold">{workspace.name}</h3>
 
                       <div className="mt-auto flex items-center gap-1.5 text-text-tertiary">
                         <RiGroupLine className="size-4" />
@@ -209,7 +217,7 @@ export default function WorkspacesPage() {
                         </span>
                       </div>
 
-                      <div className="system-xs-regular mt-2 text-text-quaternary">
+                      <div className="mt-2 text-text-quaternary system-xs-regular">
                         {formatDate(workspace.created_at)}
                       </div>
                     </Link>
@@ -231,61 +239,82 @@ export default function WorkspacesPage() {
       )}
 
       {/* Create Workspace Modal */}
-      <Modal
-        isShow={showCreateModal}
-        onClose={() => {
-          setShowCreateModal(false)
-          setNewWorkspaceName('')
+      <Dialog
+        open={showCreateModal}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowCreateModal(false)
+            setNewWorkspaceName('')
+          }
         }}
-        title={t('admin.createWorkspace', { ns: 'custom' })}
-        closable
       >
-        <div className="mt-4">
-          <label className="system-sm-medium mb-2 block text-text-secondary">
-            {t('admin.workspaceName', { ns: 'custom' })}
-          </label>
-          <Input
-            value={newWorkspaceName}
-            onChange={e => setNewWorkspaceName(e.target.value)}
-            placeholder={t('admin.workspaceName', { ns: 'custom' })}
-            className="mb-6"
-          />
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setShowCreateModal(false)
-                setNewWorkspaceName('')
-              }}
-            >
-              {t('admin.cancel', { ns: 'custom' })}
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleCreateWorkspace}
-              disabled={!newWorkspaceName.trim() || isCreating}
-              loading={isCreating}
-            >
-              {t('admin.createWorkspace', { ns: 'custom' })}
-            </Button>
+        <DialogContent className="max-w-[480px]">
+          <DialogCloseButton />
+          <DialogTitle className="text-text-primary title-2xl-semi-bold">
+            {t('admin.createWorkspace', { ns: 'custom' })}
+          </DialogTitle>
+          <div className="mt-4">
+            <label className="mb-2 block text-text-secondary system-sm-medium">
+              {t('admin.workspaceName', { ns: 'custom' })}
+            </label>
+            <Input
+              value={newWorkspaceName}
+              onChange={e => setNewWorkspaceName(e.target.value)}
+              placeholder={t('admin.workspaceName', { ns: 'custom' })}
+              className="mb-6"
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowCreateModal(false)
+                  setNewWorkspaceName('')
+                }}
+              >
+                {t('admin.cancel', { ns: 'custom' })}
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleCreateWorkspace}
+                disabled={!newWorkspaceName.trim() || isCreating}
+                loading={isCreating}
+              >
+                {t('admin.createWorkspace', { ns: 'custom' })}
+              </Button>
+            </div>
           </div>
-        </div>
-      </Modal>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation */}
-      <Confirm
-        isShow={showDeleteConfirm}
-        type="danger"
-        title={t('admin.confirmDeleteWorkspaceTitle', { ns: 'custom' })}
-        content={workspaceToDelete?.member_count === 1
-          ? t('admin.confirmDeleteWorkspaceWithOwner', { ns: 'custom', name: workspaceToDelete?.name })
-          : t('admin.confirmDeleteWorkspace', { ns: 'custom' })}
-        onConfirm={handleConfirmDelete}
-        onCancel={() => {
-          setShowDeleteConfirm(false)
+      <AlertDialog
+        open={showDeleteConfirm}
+        onOpenChange={(open) => {
+          if (!open)
+            setShowDeleteConfirm(false)
         }}
-        isLoading={isDeleting}
-      />
+      >
+        <AlertDialogContent>
+          <div className="flex flex-col items-start gap-2 self-stretch pb-4 pl-6 pr-6 pt-6">
+            <AlertDialogTitle className="w-full text-text-primary title-2xl-semi-bold">
+              {t('admin.confirmDeleteWorkspaceTitle', { ns: 'custom' })}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="w-full whitespace-pre-wrap break-words text-text-tertiary system-md-regular">
+              {workspaceToDelete?.member_count === 1
+                ? t('admin.confirmDeleteWorkspaceWithOwner', { ns: 'custom', name: workspaceToDelete?.name })
+                : t('admin.confirmDeleteWorkspace', { ns: 'custom' })}
+            </AlertDialogDescription>
+          </div>
+          <AlertDialogActions>
+            <AlertDialogCancelButton disabled={isDeleting}>
+              {t('operation.cancel', { ns: 'common' })}
+            </AlertDialogCancelButton>
+            <AlertDialogConfirmButton loading={isDeleting} disabled={isDeleting} onClick={handleConfirmDelete}>
+              {t('operation.confirm', { ns: 'common' })}
+            </AlertDialogConfirmButton>
+          </AlertDialogActions>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

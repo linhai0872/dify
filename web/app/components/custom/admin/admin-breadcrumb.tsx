@@ -7,7 +7,7 @@
 
 import type { FC } from 'react'
 import { RiArrowRightSLine } from '@remixicon/react'
-import Link from 'next/link'
+import Link from '@/next/link'
 import { cn } from '@/utils/classnames'
 
 export type BreadcrumbItem = {

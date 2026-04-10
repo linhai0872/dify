@@ -23,9 +23,9 @@ const AdminEmptyState: FC<AdminEmptyStateProps> = ({
       <div className="mb-3 flex size-12 items-center justify-center rounded-xl bg-background-section text-text-quaternary">
         {icon}
       </div>
-      <h3 className="system-md-medium text-text-secondary">{title}</h3>
+      <h3 className="text-text-secondary system-md-medium">{title}</h3>
       {description && (
-        <p className="system-sm-regular mt-1 max-w-sm text-center text-text-tertiary">{description}</p>
+        <p className="mt-1 max-w-sm text-center text-text-tertiary system-sm-regular">{description}</p>
       )}
       {action && (
         <div className="mt-4">{action}</div>

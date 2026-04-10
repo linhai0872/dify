@@ -1,3 +1,4 @@
+import type { BackoffStrategy } from './types'
 import type {
   Node,
 } from '@/app/components/workflow/types'
@@ -8,7 +9,7 @@ import { Slider } from '@/app/components/base/ui/slider'
 import Split from '@/app/components/workflow/nodes/_base/components/split'
 import { useRetryConfig } from './hooks'
 import s from './style.module.css'
-import { BackoffStrategy } from './types'
+import { backoffStrategies } from './types'
 
 type RetryOnPanelProps = Pick<Node, 'id' | 'data'>
 const RetryOnPanel = ({
@@ -20,8 +21,8 @@ const RetryOnPanel = ({
   const { retry_config } = data
 
   // [CUSTOM] 二开: 默认值
-  const currentBackoffStrategy = retry_config?.backoff_strategy || BackoffStrategy.FIXED
-  const isExponentialBackoff = currentBackoffStrategy === BackoffStrategy.EXPONENTIAL
+  const currentBackoffStrategy = retry_config?.backoff_strategy || backoffStrategies.FIXED
+  const isExponentialBackoff = currentBackoffStrategy === backoffStrategies.EXPONENTIAL
   // [/CUSTOM]
 
   const handleRetryEnabledChange = (value: boolean) => {
@@ -30,7 +31,7 @@ const RetryOnPanel = ({
       max_retries: retry_config?.max_retries || 3,
       retry_interval: retry_config?.retry_interval || 1000,
       // [CUSTOM] 二开: 保留退避策略配置
-      backoff_strategy: retry_config?.backoff_strategy || BackoffStrategy.FIXED,
+      backoff_strategy: retry_config?.backoff_strategy || backoffStrategies.FIXED,
       backoff_multiplier: retry_config?.backoff_multiplier || 2.0,
       max_backoff_interval: retry_config?.max_backoff_interval || 60000,
       // [/CUSTOM]
@@ -47,7 +48,7 @@ const RetryOnPanel = ({
       max_retries: value,
       retry_interval: retry_config?.retry_interval || 1000,
       // [CUSTOM] 二开: 保留退避策略配置
-      backoff_strategy: retry_config?.backoff_strategy || BackoffStrategy.FIXED,
+      backoff_strategy: retry_config?.backoff_strategy || backoffStrategies.FIXED,
       backoff_multiplier: retry_config?.backoff_multiplier || 2.0,
       max_backoff_interval: retry_config?.max_backoff_interval || 60000,
       // [/CUSTOM]
@@ -64,7 +65,7 @@ const RetryOnPanel = ({
       max_retries: retry_config?.max_retries || 3,
       retry_interval: value,
       // [CUSTOM] 二开: 保留退避策略配置
-      backoff_strategy: retry_config?.backoff_strategy || BackoffStrategy.FIXED,
+      backoff_strategy: retry_config?.backoff_strategy || backoffStrategies.FIXED,
       backoff_multiplier: retry_config?.backoff_multiplier || 2.0,
       max_backoff_interval: retry_config?.max_backoff_interval || 60000,
       // [/CUSTOM]
@@ -92,7 +93,7 @@ const RetryOnPanel = ({
       retry_enabled: true,
       max_retries: retry_config?.max_retries || 3,
       retry_interval: retry_config?.retry_interval || 1000,
-      backoff_strategy: retry_config?.backoff_strategy || BackoffStrategy.EXPONENTIAL,
+      backoff_strategy: retry_config?.backoff_strategy || backoffStrategies.EXPONENTIAL,
       backoff_multiplier: retry_config?.backoff_multiplier || 2.0,
       max_backoff_interval: value,
     })
@@ -116,17 +117,17 @@ const RetryOnPanel = ({
             <div className="px-4 pb-2">
               {/* [CUSTOM] 二开: 退避策略选择器 */}
               <div className="mb-2 flex w-full items-center">
-                <div className="system-xs-medium-uppercase mr-2 grow text-text-secondary">{t('nodes.common.retry.backoffStrategy', { ns: 'workflow' })}</div>
+                <div className="mr-2 grow text-text-secondary system-xs-medium-uppercase">{t('nodes.common.retry.backoffStrategy', { ns: 'workflow' })}</div>
                 <div className="flex gap-1">
                   <button
-                    className={`rounded-md px-3 py-1 text-xs ${currentBackoffStrategy === BackoffStrategy.FIXED ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                    onClick={() => handleBackoffStrategyChange(BackoffStrategy.FIXED)}
+                    className={`rounded-md px-3 py-1 text-xs ${currentBackoffStrategy === backoffStrategies.FIXED ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                    onClick={() => handleBackoffStrategyChange(backoffStrategies.FIXED)}
                   >
                     {t('nodes.common.retry.fixed', { ns: 'workflow' })}
                   </button>
                   <button
-                    className={`rounded-md px-3 py-1 text-xs ${currentBackoffStrategy === BackoffStrategy.EXPONENTIAL ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                    onClick={() => handleBackoffStrategyChange(BackoffStrategy.EXPONENTIAL)}
+                    className={`rounded-md px-3 py-1 text-xs ${currentBackoffStrategy === backoffStrategies.EXPONENTIAL ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                    onClick={() => handleBackoffStrategyChange(backoffStrategies.EXPONENTIAL)}
                   >
                     {t('nodes.common.retry.exponential', { ns: 'workflow' })}
                   </button>
@@ -156,7 +157,7 @@ const RetryOnPanel = ({
                 />
               </div>
               <div className="mb-1 flex items-center">
-                <div className="system-xs-medium-uppercase mr-2 grow text-text-secondary">
+                <div className="mr-2 grow text-text-secondary system-xs-medium-uppercase">
                   {isExponentialBackoff
                     ? t('nodes.common.retry.baseInterval', { ns: 'workflow' })
                     : t('nodes.common.retry.retryInterval', { ns: 'workflow' })}
@@ -184,13 +185,14 @@ const RetryOnPanel = ({
               {/* [CUSTOM] 二开: 指数退避最大间隔配置 */}
               {isExponentialBackoff && (
                 <div className="flex items-center">
-                  <div className="system-xs-medium-uppercase mr-2 grow text-text-secondary">{t('nodes.common.retry.maxBackoffInterval', { ns: 'workflow' })}</div>
+                  <div className="mr-2 grow text-text-secondary system-xs-medium-uppercase">{t('nodes.common.retry.maxBackoffInterval', { ns: 'workflow' })}</div>
                   <Slider
                     className="mr-3 w-[108px]"
                     value={retry_config?.max_backoff_interval || 60000}
-                    onChange={handleMaxBackoffIntervalChange}
+                    onValueChange={handleMaxBackoffIntervalChange}
                     min={1000}
                     max={60000}
+                    aria-label={t('nodes.common.retry.maxBackoffInterval', { ns: 'workflow' })}
                   />
                   <Input
                     type="number"

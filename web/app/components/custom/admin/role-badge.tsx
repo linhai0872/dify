@@ -47,7 +47,7 @@ const RoleBadge: FC<RoleBadgeProps> = ({
   return (
     <span
       className={cn(
-        'system-xs-medium inline-flex shrink-0 items-center rounded-md px-2 py-0.5',
+        'inline-flex shrink-0 items-center rounded-md px-2 py-0.5 system-xs-medium',
         colors.bg,
         colors.text,
         className,

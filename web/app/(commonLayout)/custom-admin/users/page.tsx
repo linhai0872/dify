@@ -22,9 +22,17 @@ import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Button from '@/app/components/base/button'
 import Checkbox from '@/app/components/base/checkbox'
-import Confirm from '@/app/components/base/confirm'
 import Pagination from '@/app/components/base/pagination'
-import Toast from '@/app/components/base/toast'
+import {
+  AlertDialog,
+  AlertDialogActions,
+  AlertDialogCancelButton,
+  AlertDialogConfirmButton,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+} from '@/app/components/base/ui/alert-dialog'
+import { toast } from '@/app/components/base/ui/toast'
 import { AdminEmptyState, AdminPageHeader, AdminTableSkeleton, BatchActionBar } from '@/app/components/custom/admin'
 import CreateUserModal from '@/app/components/custom/admin/users/create-user-modal'
 import UserConfirmDialogs from '@/app/components/custom/admin/users/user-confirm-dialogs'
@@ -93,16 +101,16 @@ export default function UsersPage() {
     }
 
     updateRole({ userId, role: newRole }, {
-      onSuccess: () => Toast.notify({ type: 'success', message: t('admin.roleUpdateSuccess', { ns: 'custom' }) }),
-      onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+      onSuccess: () => toast.success(t('admin.roleUpdateSuccess', { ns: 'custom' })),
+      onError: () => toast.error(t('admin.operationFailed', { ns: 'custom' })),
     })
   }, [canChangeRole, updateRole, usersData?.data, t])
 
   const handleConfirmRoleChange = useCallback(() => {
     if (pendingRoleChange) {
       updateRole({ userId: pendingRoleChange.userId, role: pendingRoleChange.to }, {
-        onSuccess: () => Toast.notify({ type: 'success', message: t('admin.roleUpdateSuccess', { ns: 'custom' }) }),
-        onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+        onSuccess: () => toast.success(t('admin.roleUpdateSuccess', { ns: 'custom' })),
+        onError: () => toast.error(t('admin.operationFailed', { ns: 'custom' })),
       })
       setShowRoleConfirm(false)
     }
@@ -120,8 +128,8 @@ export default function UsersPage() {
     }
     else {
       updateStatus({ userId: user.id, status: 'active' }, {
-        onSuccess: () => Toast.notify({ type: 'success', message: t('admin.statusUpdateSuccess', { ns: 'custom' }) }),
-        onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+        onSuccess: () => toast.success(t('admin.statusUpdateSuccess', { ns: 'custom' })),
+        onError: () => toast.error(t('admin.operationFailed', { ns: 'custom' })),
       })
     }
   }, [canChangeStatus, updateStatus, t])
@@ -130,8 +138,8 @@ export default function UsersPage() {
     if (userToToggle) {
       const newStatus = userToToggle.status === 'active' ? 'banned' : 'active'
       updateStatus({ userId: userToToggle.id, status: newStatus }, {
-        onSuccess: () => Toast.notify({ type: 'success', message: t('admin.statusUpdateSuccess', { ns: 'custom' }) }),
-        onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+        onSuccess: () => toast.success(t('admin.statusUpdateSuccess', { ns: 'custom' })),
+        onError: () => toast.error(t('admin.operationFailed', { ns: 'custom' })),
       })
       setShowStatusConfirm(false)
     }
@@ -141,9 +149,9 @@ export default function UsersPage() {
     createUser(data, {
       onSuccess: () => {
         setShowCreateModal(false)
-        Toast.notify({ type: 'success', message: t('admin.userCreateSuccess', { ns: 'custom' }) })
+        toast.success(t('admin.userCreateSuccess', { ns: 'custom' }))
       },
-      onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+      onError: () => toast.error(t('admin.operationFailed', { ns: 'custom' })),
     })
   }, [createUser, t])
 
@@ -160,9 +168,9 @@ export default function UsersPage() {
       deleteUser(userToDelete.id, {
         onSuccess: () => {
           setShowDeleteConfirm(false)
-          Toast.notify({ type: 'success', message: t('admin.userDeleteSuccess', { ns: 'custom' }) })
+          toast.success(t('admin.userDeleteSuccess', { ns: 'custom' }))
         },
-        onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+        onError: () => toast.error(t('admin.operationFailed', { ns: 'custom' })),
       })
     }
   }, [userToDelete, deleteUser, t])
@@ -213,9 +221,9 @@ export default function UsersPage() {
         onSuccess: () => {
           setShowBatchConfirm(false)
           setSelectedUserIds(new Set())
-          Toast.notify({ type: 'success', message: t('admin.batchActionSuccess', { ns: 'custom', count: selectedUserIds.size }) })
+          toast.success(t('admin.batchActionSuccess', { ns: 'custom', count: selectedUserIds.size }))
         },
-        onError: () => Toast.notify({ type: 'error', message: t('admin.operationFailed', { ns: 'custom' }) }),
+        onError: () => toast.error(t('admin.operationFailed', { ns: 'custom' })),
       },
     )
   }, [batchAction, selectedUserIds, batchUserAction, t])
@@ -284,22 +292,22 @@ export default function UsersPage() {
               disabled={selectableUsers.length === 0}
             />
           </div>
-          <div className="system-xs-medium-uppercase grow px-4 text-text-tertiary">
+          <div className="grow px-4 text-text-tertiary system-xs-medium-uppercase">
             {t('admin.user', { ns: 'custom' })}
           </div>
-          <div className="system-xs-medium-uppercase w-[140px] shrink-0 px-3 text-text-tertiary">
+          <div className="w-[140px] shrink-0 px-3 text-text-tertiary system-xs-medium-uppercase">
             {t('admin.systemRoleLabel', { ns: 'custom' })}
           </div>
-          <div className="system-xs-medium-uppercase w-[100px] shrink-0 px-3 text-text-tertiary">
+          <div className="w-[100px] shrink-0 px-3 text-text-tertiary system-xs-medium-uppercase">
             {t('admin.status', { ns: 'custom' })}
           </div>
-          <div className="system-xs-medium-uppercase w-[120px] shrink-0 px-3 text-text-tertiary">
+          <div className="w-[120px] shrink-0 px-3 text-text-tertiary system-xs-medium-uppercase">
             {t('admin.workspaces', { ns: 'custom' })}
           </div>
-          <div className="system-xs-medium-uppercase w-[104px] shrink-0 text-text-tertiary">
+          <div className="w-[104px] shrink-0 text-text-tertiary system-xs-medium-uppercase">
             {t('admin.lastActive', { ns: 'custom' })}
           </div>
-          <div className="system-xs-medium-uppercase w-[100px] shrink-0 px-3 text-text-tertiary">
+          <div className="w-[100px] shrink-0 px-3 text-text-tertiary system-xs-medium-uppercase">
             {t('admin.actions', { ns: 'custom' })}
           </div>
         </div>
@@ -360,21 +368,41 @@ export default function UsersPage() {
       />
 
       {/* Role Change Confirmation */}
-      <Confirm
-        isShow={showRoleConfirm}
-        type={pendingRoleChange?.to === 'system_admin' ? 'warning' : 'danger'}
-        title={pendingRoleChange?.to === 'system_admin'
-          ? t('admin.confirmPromoteToAdminTitle', { ns: 'custom' })
-          : t('admin.confirmDemoteRoleTitle', { ns: 'custom' })}
-        content={pendingRoleChange?.to === 'system_admin'
-          ? t('admin.confirmPromoteToAdmin', { ns: 'custom', name: pendingRoleChange?.name })
-          : t('admin.confirmDemoteRole', { ns: 'custom', name: pendingRoleChange?.name })}
-        onConfirm={handleConfirmRoleChange}
-        onCancel={() => {
-          setShowRoleConfirm(false)
+      <AlertDialog
+        open={showRoleConfirm}
+        onOpenChange={(open) => {
+          if (!open)
+            setShowRoleConfirm(false)
         }}
-        isLoading={isUpdatingRole}
-      />
+      >
+        <AlertDialogContent>
+          <div className="flex flex-col items-start gap-2 self-stretch pb-4 pl-6 pr-6 pt-6">
+            <AlertDialogTitle className="w-full text-text-primary title-2xl-semi-bold">
+              {pendingRoleChange?.to === 'system_admin'
+                ? t('admin.confirmPromoteToAdminTitle', { ns: 'custom' })
+                : t('admin.confirmDemoteRoleTitle', { ns: 'custom' })}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="w-full whitespace-pre-wrap break-words text-text-tertiary system-md-regular">
+              {pendingRoleChange?.to === 'system_admin'
+                ? t('admin.confirmPromoteToAdmin', { ns: 'custom', name: pendingRoleChange?.name })
+                : t('admin.confirmDemoteRole', { ns: 'custom', name: pendingRoleChange?.name })}
+            </AlertDialogDescription>
+          </div>
+          <AlertDialogActions>
+            <AlertDialogCancelButton disabled={isUpdatingRole}>
+              {t('operation.cancel', { ns: 'common' })}
+            </AlertDialogCancelButton>
+            <AlertDialogConfirmButton
+              loading={isUpdatingRole}
+              disabled={isUpdatingRole}
+              destructive={pendingRoleChange?.to !== 'system_admin'}
+              onClick={handleConfirmRoleChange}
+            >
+              {t('operation.confirm', { ns: 'common' })}
+            </AlertDialogConfirmButton>
+          </AlertDialogActions>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Confirmation Dialogs */}
       <UserConfirmDialogs

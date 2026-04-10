@@ -139,10 +139,10 @@ export const BannerItem: FC<BannerItemProps> = ({
               className="flex min-w-[480px] max-w-[680px] flex-[1_0_0] flex-col pr-4"
               style={responsiveStyle}
             >
-              <p className="title-4xl-semi-bold line-clamp-1 text-dify-logo-blue">
+              <p className="line-clamp-1 text-dify-logo-blue title-4xl-semi-bold">
                 {category}
               </p>
-              <p className="title-4xl-semi-bold line-clamp-2 text-dify-logo-black">
+              <p className="line-clamp-2 text-dify-logo-black title-4xl-semi-bold">
                 {title}
               </p>
             </div>
@@ -151,7 +151,7 @@ export const BannerItem: FC<BannerItemProps> = ({
               className="min-w-60 max-w-[600px] flex-[1_0_0] self-end overflow-hidden py-1 pr-4"
               style={responsiveStyle}
             >
-              <p className="body-sm-regular line-clamp-4 overflow-hidden text-text-tertiary">
+              <p className="line-clamp-4 overflow-hidden text-text-tertiary body-sm-regular">
                 {description}
               </p>
             </div>
@@ -167,7 +167,7 @@ export const BannerItem: FC<BannerItemProps> = ({
               <div className="flex h-4 w-4 items-center justify-center rounded-full bg-text-accent p-[2px]">
                 <RiArrowRightLine className="h-3 w-3 text-text-primary-on-surface" />
               </div>
-              <span className="system-sm-semibold-uppercase text-text-accent">
+              <span className="text-text-accent system-sm-semibold-uppercase">
                 {t('banner.viewMore', { ns: 'explore' })}
               </span>
             </div>

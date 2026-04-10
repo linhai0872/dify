@@ -53,7 +53,7 @@ const BatchActionBar: FC<BatchActionBarProps> = ({
         className,
       )}
     >
-      <span className="system-sm-medium text-text-secondary">
+      <span className="text-text-secondary system-sm-medium">
         {t('admin.selectedCount', { ns: 'custom', count: selectedCount })}
       </span>
 
