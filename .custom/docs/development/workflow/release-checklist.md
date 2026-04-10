@@ -46,8 +46,9 @@
 - [ ] **合并迁移 revision 与生产库一致**：若生产库曾执行过手工 `stamp` 或带特定名的 merge，仓库里该迁移文件的 `revision = '...'` 必须与 `SELECT version_num FROM alembic_version;` 一致，否则 API 启动迁移阶段会报 *Can't locate revision*
 - [ ] 扫描上游对已使用组件的 breaking change：重点关注 named/default export 变化、Props 签名变化（`rg "export default" web/app/components/base/` 与自定义导入对比）
 - [ ] MDX 模板（`web/app/components/develop/template/*.mdx`）修改后必须执行 `cd web && pnpm build`：Turbopack 对 `<i>`、未闭合的 `CodeGroup`/`targetCode` 模板字符串、以及合并冲突把 `Heading`/`CodeGroup` 粘进 JSON 示例等情况会直接导致构建失败
-- [ ] **自定义 Sandbox 镜像**：`SANDBOX_IMAGE` 若为仅本地构建的标签（如 `dify-sandbox-custom:latest`），`docker-compose` 中已使用 `pull_policy: never`；`prod-deploy` 仅拉取 `api` / `web` / `worker` / `worker_beat`，避免 `compose pull` 因无远端仓库而整次失败
-- [ ] **镜像标签与回滚**：更新 `.custom/env/.env.custom.prod` 的 `API_IMAGE`、`WEB_IMAGE` 后，同步修改服务器上 `docker/.env` 中对应行（`env-merge` 不会覆盖已有块内旧值）。若 `prod-deploy` 触发回滚脚本，历史上可能只改写 `API_IMAGE`，需人工核对 `WEB_IMAGE` 是否仍指向预期版本
+- [ ] **插件守护进程镜像**：`dify-plugin-daemon` 为独立仓库/镜像，官方主仓库 `docker-compose.yaml` 中的 tag 可能滞后于修复版本。二开在 `docker/docker-compose.yaml` 使用 `PLUGIN_DAEMON_IMAGE`（默认 `langgenius/dify-plugin-daemon:0.5.6-local`）。同步上游后若官方仍 pin 旧 tag，保留二开默认值或按 [dify-plugin-daemon Releases](https://github.com/langgenius/dify-plugin-daemon/releases) 上调；生产覆盖时写入 `docker/.env`，与 `prod-deploy` 拉取列表一致
+- [ ] **自定义 Sandbox 镜像**：`SANDBOX_IMAGE` 若为仅本地构建的标签（如 `dify-sandbox-custom:latest`），`docker-compose` 中已使用 `pull_policy: never`；`prod-deploy` 仅拉取 `api` / `web` / `worker` / `worker_beat` / `plugin_daemon`（不包含 `sandbox`），避免对仅本地存在的 Sandbox 标签执行 `pull` 导致失败
+- [ ] **镜像标签与回滚**：更新 `.custom/env/.env.custom.prod` 的 `API_IMAGE`、`WEB_IMAGE`（及按需的 `PLUGIN_DAEMON_IMAGE`）后，同步修改服务器上 `docker/.env` 中对应行（`env-merge` 不会覆盖已有块内旧值）。若 `prod-deploy` 触发回滚脚本，历史上可能只改写 `API_IMAGE`，需人工核对 `WEB_IMAGE` / `PLUGIN_DAEMON_IMAGE` 是否仍指向预期版本
 
 ---
 

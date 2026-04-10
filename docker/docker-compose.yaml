@@ -986,7 +986,8 @@ services:
 
   # plugin daemon
   plugin_daemon:
-    image: langgenius/dify-plugin-daemon:0.5.3-local
+    # [CUSTOM] 独立仓库发布节奏快于主仓库 compose；默认高于官方 1.13.3 所 pin 的 0.5.3-local（含插件安装 context canceled 等修复，见 langgenius/dify-plugin-daemon#603）。可通过 PLUGIN_DAEMON_IMAGE 覆盖。
+    image: ${PLUGIN_DAEMON_IMAGE:-langgenius/dify-plugin-daemon:0.5.6-local}
     restart: always
     environment:
       # Use the shared environment variables.

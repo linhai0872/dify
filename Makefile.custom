@@ -21,6 +21,7 @@ PROJECT_NAME ?= dify-custom
 UPSTREAM_API_VERSION := $(shell grep -m1 'dify-api:' docker/docker-compose.yaml | sed 's/.*dify-api://;s/}.*//;s/[[:space:]]*$$//')
 UPSTREAM_WEB_VERSION := $(shell grep -m1 'dify-web:' docker/docker-compose.yaml | sed 's/.*dify-web://;s/}.*//;s/[[:space:]]*$$//')
 UPSTREAM_SANDBOX_VERSION := $(shell grep -m1 'dify-sandbox:' docker/docker-compose.yaml | sed 's/.*dify-sandbox://;s/}.*//;s/[[:space:]]*$$//')
+UPSTREAM_PLUGIN_DAEMON_VERSION := $(shell grep 'dify-plugin-daemon:' docker/docker-compose.yaml | head -1 | sed 's/.*dify-plugin-daemon://;s/[[:space:]}].*//')
 VERSION ?= $(UPSTREAM_API_VERSION)-$(shell git rev-parse --short HEAD)
 
 # 超时配置 (秒)
@@ -388,7 +389,7 @@ test-restart: ## 🔄 重启测试环境 (不重新构建)
 	@$(MAKE) -f Makefile.custom test-up
 
 test-build: ## 构建测试镜像 (自动包含 LibreOffice, 双标签: 版本+test)
-	@echo "$(GREEN)🔨 构建测试镜像 (upstream: $(UPSTREAM_API_VERSION), 版本: $(VERSION))...$(NC)"
+	@echo "$(GREEN)🔨 构建测试镜像 (api/web: $(UPSTREAM_API_VERSION), plugin_daemon: $(UPSTREAM_PLUGIN_DAEMON_VERSION), 版本: $(VERSION))...$(NC)"
 	@echo "$(YELLOW)步骤 1/3: 构建基础 API 镜像$(NC)"
 	docker build -t $(PROJECT_NAME)-api:test-base ./api
 	@echo "$(YELLOW)步骤 2/3: 扩展 API 镜像 (添加 LibreOffice)$(NC)"
@@ -464,8 +465,8 @@ prod-deploy: ## 滚动更新生产环境 (拉取新镜像，零停机，失败�
 		echo "$(YELLOW)📋 当前 API 镜像: $$API_OLD_IMAGE$(NC)"; \
 	fi; \
 	echo "$(YELLOW)📦 拉取新镜像 (跳过本地镜像)...$(NC)"; \
-	docker compose -f docker/docker-compose.yaml --env-file docker/.env -p $(PROJECT_NAME)-prod pull --ignore-buildable api web worker worker_beat 2>/dev/null || \
-		docker compose -f docker/docker-compose.yaml --env-file docker/.env -p $(PROJECT_NAME)-prod pull api web worker worker_beat; \
+	docker compose -f docker/docker-compose.yaml --env-file docker/.env -p $(PROJECT_NAME)-prod pull --ignore-buildable api web worker worker_beat plugin_daemon 2>/dev/null || \
+		docker compose -f docker/docker-compose.yaml --env-file docker/.env -p $(PROJECT_NAME)-prod pull api web worker worker_beat plugin_daemon; \
 	echo "$(YELLOW)📦 更新 API 容器...$(NC)"; \
 	docker compose -f docker/docker-compose.yaml --env-file docker/.env -p $(PROJECT_NAME)-prod up -d --no-deps api; \
 	echo "$(YELLOW)⏳ 等待 API 健康检查 (最多 $(API_WAIT_TIMEOUT) 秒)...$(NC)"; \
@@ -498,6 +499,8 @@ prod-deploy: ## 滚动更新生产环境 (拉取新镜像，零停机，失败�
 	fi; \
 	echo "$(YELLOW)📦 更新 Worker 容器...$(NC)"; \
 	docker compose -f docker/docker-compose.yaml --env-file docker/.env -p $(PROJECT_NAME)-prod up -d --no-deps worker worker_beat; \
+	echo "$(YELLOW)📦 更新 Plugin Daemon 容器...$(NC)"; \
+	docker compose -f docker/docker-compose.yaml --env-file docker/.env -p $(PROJECT_NAME)-prod up -d --no-deps plugin_daemon; \
 	echo "$(YELLOW)📦 更新 Web 容器...$(NC)"; \
 	docker compose -f docker/docker-compose.yaml --env-file docker/.env -p $(PROJECT_NAME)-prod up -d --no-deps web; \
 	echo "$(YELLOW)🔄 重启 nginx (刷新 DNS 缓存)...$(NC)"; \
