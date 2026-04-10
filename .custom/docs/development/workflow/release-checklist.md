@@ -36,9 +36,15 @@
 ## 四、部署准备
 
 - [ ] Docker 镜像构建成功：`make -f Makefile.custom prod-build`
+- [ ] 构建成功后，更新 `.custom/env/.env.custom.prod` 中的 `API_IMAGE` 和 `WEB_IMAGE` 为新版本标签（格式：`<registry>/<name>:<VERSION>-<GIT_SHA>`）
 - [ ] 镜像已推送到镜像仓库：`make -f Makefile.custom prod-push`
 - [ ] 数据库已备份：`make -f Makefile.custom db-backup`
 - [ ] 功能开关默认值为 `false`（如需灰度）
+
+**同步上游版本时额外检查：**
+- [ ] 检查 migration heads 是否有分叉：`uv run --project api flask db heads`，若有多个 head 需先创建 merge migration（`flask db merge heads -m "merge"` 后重命名到 `api/migrations/versions/` 并加 `custom_` 前缀）
+- [ ] 扫描上游对已使用组件的 breaking change：重点关注 named/default export 变化、Props 签名变化（`rg "export default" web/app/components/base/` 与自定义导入对比）
+- [ ] MDX 模板文件修改后必须本地执行 `cd web && pnpm build` 验证，Turbopack 对 JSX/Markdown 嵌套非常严格
 
 ---
 
@@ -63,6 +69,11 @@ make -f Makefile.custom prod-deploy
 - [ ] 核心功能验证通过
 - [ ] 日志无异常错误：`docker compose logs -f`
 - [ ] 功能开关可正常控制
+
+> **运维注意**：nginx 启动时静态缓存各服务的 DNS（`api`、`web` 等）。若手动重启 API 容器（非通过 `prod-deploy`），必须同步重启 nginx，否则 nginx 会连接旧 IP 导致所有 API 请求挂死：
+> ```bash
+> docker compose -f docker/docker-compose.yaml --env-file docker/.env -p dify-custom-prod restart api nginx
+> ```
 
 ---
 

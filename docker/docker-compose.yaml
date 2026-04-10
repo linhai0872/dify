@@ -739,6 +739,8 @@ services:
       <<: *shared-api-worker-env
       # Startup mode, 'api' starts the API server.
       MODE: api
+      # DB is already migrated manually; disable auto-migration until image is rebuilt with merge migration.
+      MIGRATION_ENABLED: "false"
       SENTRY_DSN: ${API_SENTRY_DSN:-}
       SENTRY_TRACES_SAMPLE_RATE: ${API_SENTRY_TRACES_SAMPLE_RATE:-1.0}
       SENTRY_PROFILES_SAMPLE_RATE: ${API_SENTRY_PROFILES_SAMPLE_RATE:-1.0}
@@ -782,6 +784,8 @@ services:
       <<: *shared-api-worker-env
       # Startup mode, 'worker' starts the Celery worker for processing all queues.
       MODE: worker
+      # Workers don't run DB migrations; migrations are handled by the API container.
+      MIGRATION_ENABLED: "false"
       SENTRY_DSN: ${API_SENTRY_DSN:-}
       SENTRY_TRACES_SAMPLE_RATE: ${API_SENTRY_TRACES_SAMPLE_RATE:-1.0}
       SENTRY_PROFILES_SAMPLE_RATE: ${API_SENTRY_PROFILES_SAMPLE_RATE:-1.0}
@@ -822,6 +826,8 @@ services:
       <<: *shared-api-worker-env
       # Startup mode, 'worker_beat' starts the Celery beat for scheduling periodic tasks.
       MODE: beat
+      # Workers don't run DB migrations; migrations are handled by the API container.
+      MIGRATION_ENABLED: "false"
     depends_on:
       init_permissions:
         condition: service_completed_successfully

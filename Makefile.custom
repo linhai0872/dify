@@ -459,18 +459,19 @@ prod-deploy: ## 滚动更新生产环境 (拉取新镜像，零停机，失败�
 	@echo "$(GREEN)🚀 滚动更新生产环境...$(NC)"
 	@$(MAKE) -f Makefile.custom env-merge ENV=prod
 	@# 保存当前 API 镜像标签用于回滚
-	@API_OLD_IMAGE=$$(cd docker && docker compose -f docker-compose.yaml -p $(PROJECT_NAME)-prod ps -q api 2>/dev/null | xargs -I {} docker inspect --format='{{index .Config.Image}}' {} 2>/dev/null || echo ""); \
+	@API_OLD_IMAGE=$$(docker compose -f docker/docker-compose.yaml -p $(PROJECT_NAME)-prod ps -q api 2>/dev/null | xargs -I {} docker inspect --format='{{index .Config.Image}}' {} 2>/dev/null || echo ""); \
 	if [ -n "$$API_OLD_IMAGE" ]; then \
 		echo "$(YELLOW)📋 当前 API 镜像: $$API_OLD_IMAGE$(NC)"; \
 	fi; \
-	echo "$(YELLOW)📦 拉取新镜像...$(NC)"; \
-	cd docker && docker compose -f docker-compose.yaml --env-file .env -p $(PROJECT_NAME)-prod pull; \
+	echo "$(YELLOW)📦 拉取新镜像 (跳过本地镜像)...$(NC)"; \
+	docker compose -f docker/docker-compose.yaml --env-file docker/.env -p $(PROJECT_NAME)-prod pull --ignore-buildable 2>/dev/null || \
+		docker compose -f docker/docker-compose.yaml --env-file docker/.env -p $(PROJECT_NAME)-prod pull; \
 	echo "$(YELLOW)📦 更新 API 容器...$(NC)"; \
-	cd docker && docker compose -f docker-compose.yaml --env-file .env -p $(PROJECT_NAME)-prod up -d --no-deps api; \
+	docker compose -f docker/docker-compose.yaml --env-file docker/.env -p $(PROJECT_NAME)-prod up -d --no-deps api; \
 	echo "$(YELLOW)⏳ 等待 API 健康检查 (最多 $(API_WAIT_TIMEOUT) 秒)...$(NC)"; \
 	API_HEALTHY=false; \
 	for i in $$(seq 1 $(API_WAIT_TIMEOUT)); do \
-		if cd docker && docker compose -f docker-compose.yaml -p $(PROJECT_NAME)-prod exec -T api curl -sf http://localhost:5001/health > /dev/null 2>&1; then \
+		if docker compose -f docker/docker-compose.yaml -p $(PROJECT_NAME)-prod exec -T api curl -sf http://localhost:5001/health > /dev/null 2>&1; then \
 			echo "$(GREEN)✓ API 健康检查通过$(NC)"; \
 			API_HEALTHY=true; \
 			break; \
@@ -481,12 +482,12 @@ prod-deploy: ## 滚动更新生产环境 (拉取新镜像，零停机，失败�
 		echo "$(RED)❌ API 健康检查失败！$(NC)"; \
 		if [ -n "$$API_OLD_IMAGE" ]; then \
 			echo "$(YELLOW)🔄 正在回滚 API 到上一版本: $$API_OLD_IMAGE$(NC)"; \
-			cd docker && sed -i.bak "s|^API_IMAGE=.*|API_IMAGE=$$API_OLD_IMAGE|" .env 2>/dev/null || \
-				sed -i '' "s|^API_IMAGE=.*|API_IMAGE=$$API_OLD_IMAGE|" .env; \
-			cd docker && docker compose -f docker-compose.yaml --env-file .env -p $(PROJECT_NAME)-prod up -d --no-deps api; \
+			sed -i.bak "s|^API_IMAGE=.*|API_IMAGE=$$API_OLD_IMAGE|" docker/.env 2>/dev/null || \
+				sed -i '' "s|^API_IMAGE=.*|API_IMAGE=$$API_OLD_IMAGE|" docker/.env; \
+			docker compose -f docker/docker-compose.yaml --env-file docker/.env -p $(PROJECT_NAME)-prod up -d --no-deps api; \
 			echo "$(YELLOW)⏳ 等待回滚后 API 就绪...$(NC)"; \
 			sleep 5; \
-			if cd docker && docker compose -f docker-compose.yaml -p $(PROJECT_NAME)-prod exec -T api curl -sf http://localhost:5001/health > /dev/null 2>&1; then \
+			if docker compose -f docker/docker-compose.yaml -p $(PROJECT_NAME)-prod exec -T api curl -sf http://localhost:5001/health > /dev/null 2>&1; then \
 				echo "$(GREEN)✓ 回滚成功，API 已恢复$(NC)"; \
 			else \
 				echo "$(RED)⚠️  回滚后 API 仍不健康，请手动检查$(NC)"; \
@@ -496,9 +497,11 @@ prod-deploy: ## 滚动更新生产环境 (拉取新镜像，零停机，失败�
 		exit 1; \
 	fi; \
 	echo "$(YELLOW)📦 更新 Worker 容器...$(NC)"; \
-	cd docker && docker compose -f docker-compose.yaml --env-file .env -p $(PROJECT_NAME)-prod up -d --no-deps worker worker_beat; \
+	docker compose -f docker/docker-compose.yaml --env-file docker/.env -p $(PROJECT_NAME)-prod up -d --no-deps worker worker_beat; \
 	echo "$(YELLOW)📦 更新 Web 容器...$(NC)"; \
-	cd docker && docker compose -f docker-compose.yaml --env-file .env -p $(PROJECT_NAME)-prod up -d --no-deps web
+	docker compose -f docker/docker-compose.yaml --env-file docker/.env -p $(PROJECT_NAME)-prod up -d --no-deps web; \
+	echo "$(YELLOW)🔄 重启 nginx (刷新 DNS 缓存)...$(NC)"; \
+	docker compose -f docker/docker-compose.yaml --env-file docker/.env -p $(PROJECT_NAME)-prod restart nginx
 	@echo "$(GREEN)✅ 生产环境更新完成$(NC)"
 
 prod-build: ## 构建生产镜像 (自动包含 LibreOffice)
