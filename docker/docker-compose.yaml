@@ -961,6 +961,8 @@ services:
   sandbox:
     # [CUSTOM] 支持通过环境变量切换自定义镜像
     image: ${SANDBOX_IMAGE:-langgenius/dify-sandbox:0.2.14}
+    # 本地构建的自定义 Sandbox 无远端仓库；compose pull 时不得尝试从 registry 拉取
+    pull_policy: never
     restart: always
     environment:
       # The DifySandbox configurations

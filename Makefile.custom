@@ -25,7 +25,7 @@ VERSION ?= $(UPSTREAM_API_VERSION)-$(shell git rev-parse --short HEAD)
 
 # 超时配置 (秒)
 DB_WAIT_TIMEOUT ?= 30
-API_WAIT_TIMEOUT ?= 60
+API_WAIT_TIMEOUT ?= 120
 
 # 颜色
 GREEN := \033[0;32m
@@ -464,8 +464,8 @@ prod-deploy: ## 滚动更新生产环境 (拉取新镜像，零停机，失败�
 		echo "$(YELLOW)📋 当前 API 镜像: $$API_OLD_IMAGE$(NC)"; \
 	fi; \
 	echo "$(YELLOW)📦 拉取新镜像 (跳过本地镜像)...$(NC)"; \
-	docker compose -f docker/docker-compose.yaml --env-file docker/.env -p $(PROJECT_NAME)-prod pull --ignore-buildable 2>/dev/null || \
-		docker compose -f docker/docker-compose.yaml --env-file docker/.env -p $(PROJECT_NAME)-prod pull; \
+	docker compose -f docker/docker-compose.yaml --env-file docker/.env -p $(PROJECT_NAME)-prod pull --ignore-buildable api web worker worker_beat 2>/dev/null || \
+		docker compose -f docker/docker-compose.yaml --env-file docker/.env -p $(PROJECT_NAME)-prod pull api web worker worker_beat; \
 	echo "$(YELLOW)📦 更新 API 容器...$(NC)"; \
 	docker compose -f docker/docker-compose.yaml --env-file docker/.env -p $(PROJECT_NAME)-prod up -d --no-deps api; \
 	echo "$(YELLOW)⏳ 等待 API 健康检查 (最多 $(API_WAIT_TIMEOUT) 秒)...$(NC)"; \
