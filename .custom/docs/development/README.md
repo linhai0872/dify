@@ -672,3 +672,17 @@ tar -czvf storage_$(date +%Y%m%d).tar.gz ./volumes/
 2. **表隔离**：二开表使用 `custom_` 前缀
 3. **适时同步**：每月至少同步一次上游
 
+### 生产发布中的通用风险（非偶发）
+
+以下问题在二开仓库同步上游、做多分支迁移时**反复出现**，请按 [发布检查清单](workflow/release-checklist.md) 逐项执行，而非依赖运气：
+
+| 现象 | 原因概要 |
+|------|----------|
+| API 启动报 *Multiple head revisions* | 上游与二开各自新增迁移未合并，需 merge migration |
+| API 启动报 *Can't locate revision* | 生产 `alembic_version` 与镜像内迁移 `revision` 不一致（常见于手工 stamp / 迁移文件改名未对齐） |
+| `compose pull` 失败 | 自定义 Sandbox 等镜像无远端仓库；应只拉取 API/Web/Worker 或使用 `pull_policy: never` |
+| `pnpm build` / 镜像构建失败 | MDX 中 `<i>`、破损的 JSX/模板字符串、合并冲突把文档结构打断 |
+| `git` 推送/合并困难 | `main`/`development`/`production` 被 force-push 后历史分叉，需约定以哪条线为基准再 cherry-pick 或合并 |
+
+生产滚动更新、回滚与健康检查细节以 `release-checklist.md` 为准。
+
