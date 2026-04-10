@@ -12,7 +12,7 @@ Workflow 应用无会话支持，适合用于翻译/文章写作/总结 AI 等�
   ### Authentication
 
   Service API 使用 `API-Key` 进行鉴权。
-  <i>**强烈建议开发者把 `API-Key` 放在后端存储，而非分享或者放在客户端存储，以免 `API-Key` 泄露，导致财产损失。**</i>
+  **强烈建议开发者把 `API-Key` 放在后端存储，而非分享或者放在客户端存储，以免 `API-Key` 泄露，导致财产损失。**
   所有 API 请求都应在 **`Authorization`** HTTP Header 中包含您的 `API-Key`，如下所示：
 
   <CodeGroup title="Code" targetCode='Authorization: Bearer {API_KEY}' />
@@ -48,7 +48,7 @@ Workflow 应用无会话支持，适合用于翻译/文章写作/总结 AI 等�
         返回响应模式，支持：
         - `streaming` 流式模式（推荐）。基于 SSE（**[Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events)**）实现类似打字机输出方式的流式返回。
         - `blocking` 阻塞模式，等待执行完毕后返回结果。（请求若流程较长可能会被中断）。
-        <i>由于 Cloudflare 限制，请求会在 100 秒超时无返回后中断。</i>
+        *由于 Cloudflare 限制，请求会在 100 秒超时无返回后中断。*
       - `user` (string) Required
         用户标识，用于定义终端用户的身份，方便检索、统计。
         由开发者定义规则，需保证用户标识在应用内唯一。API 无法访问 WebApp 创建的会话。
@@ -357,7 +357,7 @@ Workflow 应用无会话支持，适合用于翻译/文章写作/总结 AI 等�
         返回响应模式，支持：
         - `streaming` 流式模式（推荐）。基于 SSE（**[Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events)**）实现类似打字机输出方式的流式返回。
         - `blocking` 阻塞模式，等待执行完毕后返回结果。（请求若流程较长可能会被中断）。
-        <i>由于 Cloudflare 限制，请求会在 100 秒超时无返回后中断。</i>
+        *由于 Cloudflare 限制，请求会在 100 秒超时无返回后中断。*
       - `user` (string) Required
         用户标识，用于定义终端用户的身份，方便检索、统计。
         由开发者定义规则，需保证用户标识在应用内唯一。API 无法访问 WebApp 创建的会话。
@@ -664,7 +664,7 @@ Workflow 应用无会话支持，适合用于翻译/文章写作/总结 AI 等�
   <Col>
     上传文件并在发送消息时使用，可实现图文多模态理解。
     支持您的工作流程所支持的任何格式。
-    <i>上传的文件仅供当前终端用户使用。</i>
+    *上传的文件仅供当前终端用户使用。*
 
     ### Request Body
     该接口需使用  `multipart/form-data` 进行请求。
@@ -776,7 +776,7 @@ Workflow 应用无会话支持，适合用于翻译/文章写作/总结 AI 等�
   <Col>
     获取远程文件的元信息，包括文件类型和大小。此接口通过 SSRF 防护代理访问远程 URL。
 
-    <i>此为二开功能接口。</i>
+    *此为二开功能接口。*
 
     ### 路径参数
     - `url` (string) 必需
@@ -835,7 +835,7 @@ Workflow 应用无会话支持，适合用于翻译/文章写作/总结 AI 等�
   <Col>
     从远程 URL 下载文件并上传到 Dify 存储。此接口通过 SSRF 防护代理下载文件。
 
-    <i>此为二开功能接口。</i>
+    *此为二开功能接口。*
 
     ### Request Body
     <Properties>
@@ -908,7 +908,7 @@ Workflow 应用无会话支持，适合用于翻译/文章写作/总结 AI 等�
   <Col>
     通过外部追踪 ID 查询应用执行的完整详情，包括工作流节点执行信息。
 
-    <i>此为二开功能接口。</i>
+    *此为二开功能接口。*
 
     追踪 ID 可通过以下方式传入：
     - 请求头 `X-Trace-Id`

@@ -13,7 +13,7 @@ import { Row, Col, Properties, Property, Heading, SubProperty } from '../md.tsx'
 
 
   Service API 使用 `API-Key` 进行鉴权。
-  <i>**强烈建议开发者把 `API-Key` 放在后端存储，而非分享或者放在客户端存储，以免 `API-Key` 泄露，导致财产损失。**</i>
+  **强烈建议开发者把 `API-Key` 放在后端存储，而非分享或者放在客户端存储，以免 `API-Key` 泄露，导致财产损失。**
   所有 API 请求都应在 **`Authorization`** HTTP Header 中包含您的 `API-Key`，如下所示：
 
   <CodeGroup title="Code" targetCode='Authorization: Bearer {API_KEY}' />
@@ -44,7 +44,7 @@ import { Row, Col, Properties, Property, Heading, SubProperty } from '../md.tsx'
       <Property name='response_mode' type='string' key='response_mode'>
         - `streaming` 流式模式（推荐）。基于 SSE（**[Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events)**）实现类似打字机输出方式的流式返回。
         - `blocking` 阻塞模式，等待执行完毕后返回结果。（请求若流程较长可能会被中断）。
-        <i>由于 Cloudflare 限制，请求会在 100 秒超时无返回后中断。</i>
+        *由于 Cloudflare 限制，请求会在 100 秒超时无返回后中断。*
       </Property>
       <Property name='user' type='string' key='user'>
         用户标识，用于定义终端用户的身份，方便检索、统计。
@@ -186,7 +186,7 @@ import { Row, Col, Properties, Property, Heading, SubProperty } from '../md.tsx'
   <Col>
     上传文件（目前仅支持图片）并在发送消息时使用，可实现图文多模态理解。
     支持 png, jpg, jpeg, webp, gif 格式。
-    <i>上传的文件仅供当前终端用户使用。</i>
+    *上传的文件仅供当前终端用户使用。*
 
     ### Request Body
     该接口需使用  `multipart/form-data` 进行请求。
@@ -298,7 +298,7 @@ import { Row, Col, Properties, Property, Heading, SubProperty } from '../md.tsx'
   <Col>
     获取远程文件的元信息，包括文件类型和大小。此接口通过 SSRF 防护代理访问远程 URL。
 
-    <i>此为二开功能接口。</i>
+    *此为二开功能接口。*
 
     ### 路径参数
     - `url` (string) 必需
@@ -357,7 +357,7 @@ import { Row, Col, Properties, Property, Heading, SubProperty } from '../md.tsx'
   <Col>
     从远程 URL 下载文件并上传到 Dify 存储。此接口通过 SSRF 防护代理下载文件。
 
-    <i>此为二开功能接口。</i>
+    *此为二开功能接口。*
 
     ### Request Body
     <Properties>
@@ -430,7 +430,7 @@ import { Row, Col, Properties, Property, Heading, SubProperty } from '../md.tsx'
   <Col>
     预览或下载已上传的文件。此端点允许您访问先前通过文件上传 API 上传的文件。
 
-    <i>文件只能在属于请求应用程序的消息范围内访问。</i>
+    *文件只能在属于请求应用程序的消息范围内访问。*
 
     ### 路径参数
     - `file_id` (string) 必需
