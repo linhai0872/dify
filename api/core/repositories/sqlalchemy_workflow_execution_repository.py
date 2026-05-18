@@ -9,7 +9,8 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
 from core.repositories.factory import WorkflowExecutionRepository
-from graphon.entities import WorkflowExecution
+# [CUSTOM] Use extended WorkflowExecution with external_trace_id support
+from custom.graphon_ext import WorkflowExecution
 from graphon.enums import WorkflowExecutionStatus, WorkflowType
 from graphon.workflow_type_encoder import WorkflowRuntimeTypeConverter
 from libs.helper import extract_tenant_id
@@ -115,6 +116,7 @@ class SQLAlchemyWorkflowExecutionRepository(WorkflowExecutionRepository):
             exceptions_count=db_model.exceptions_count,
             started_at=db_model.created_at,
             finished_at=db_model.finished_at,
+            external_trace_id=db_model.custom_external_trace_id,  # [CUSTOM]
         )
 
     def _to_db_model(self, domain_model: WorkflowExecution) -> WorkflowRun:

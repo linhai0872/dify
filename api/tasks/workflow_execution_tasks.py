@@ -13,7 +13,8 @@ from celery import shared_task
 from sqlalchemy import select
 
 from core.db.session_factory import session_factory
-from graphon.entities import WorkflowExecution
+# [CUSTOM] Use extended WorkflowExecution with external_trace_id support
+from custom.graphon_ext import WorkflowExecution
 from graphon.workflow_type_encoder import WorkflowRuntimeTypeConverter
 from models import CreatorUserRole, WorkflowRun
 from models.enums import WorkflowRunTriggeredFrom
@@ -115,6 +116,9 @@ def _create_workflow_run_from_execution(
     workflow_run.created_by = creator_user_id
     workflow_run.created_at = execution.started_at
     workflow_run.finished_at = execution.finished_at
+    # [CUSTOM] Preserve external_trace_id
+    workflow_run.custom_external_trace_id = getattr(execution, "external_trace_id", None)
+    # [/CUSTOM]
 
     return workflow_run
 

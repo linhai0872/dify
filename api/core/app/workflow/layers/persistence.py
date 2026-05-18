@@ -22,7 +22,9 @@ from core.repositories.factory import WorkflowExecutionRepository, WorkflowNodeE
 from core.workflow.system_variables import SystemVariableKey
 from core.workflow.variable_prefixes import SYSTEM_VARIABLE_NODE_ID
 from core.workflow.workflow_run_outputs import project_node_outputs_for_workflow_run
-from graphon.entities import WorkflowExecution, WorkflowNodeExecution
+# [CUSTOM] Use extended WorkflowExecution with external_trace_id support
+from custom.graphon_ext import WorkflowExecution
+from graphon.entities import WorkflowNodeExecution
 from graphon.enums import (
     WorkflowExecutionStatus,
     WorkflowNodeExecutionMetadataKey,
