@@ -21,7 +21,7 @@
 
 | 功能 | 文档 | 当前状态 | 待办 |
 |------|------|---------|------|
-| 指数退避重试 | [exponential-backoff-retry.md](exponential-backoff-retry.md) | 后端逻辑已设计，升级至 1.14.x 后重新实现 | 升级后在 graphon 实现后端 + 补全前端配置面板 |
+| 指数退避重试 | [exponential-backoff-retry.md](exponential-backoff-retry.md) | 前端 UI 已完成，后端升级至 1.14.x 后在 graphon 重建 | 升级后 fork graphon 实现后端 + 重写测试 |
 | Workflow 费用显示 | [workflow-cost-display.md](workflow-cost-display.md) | 字段设计完成，未持久化/未展示 | 接入持久化层 + 前端费用展示组件 |
 
 ---

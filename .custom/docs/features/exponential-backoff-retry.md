@@ -6,21 +6,24 @@
 
 ## 当前状态
 
-**待完成** — 后端逻辑已设计，升级至 1.14.x（graphon 包）后重新实现，前端配置面板未实现。
+**后端待升级重建** — 前端 UI 已完整实现，后端因升级至 1.14.x（graphon 包）需在 fork 中重新实现。
 
 ### 已完成
 
-- 退避策略设计（固定间隔 / 指数退避）
-- `calculate_wait_time()` 核心算法（Full Jitter）
-- `RetryConfig` 扩展字段设计
+- ✅ 退避策略设计（固定间隔 / 指数退避）
+- ✅ `calculate_wait_time()` 核心算法设计（Full Jitter）
+- ✅ 前端策略选择器面板（`retry-on-panel.tsx`）
+- ✅ 前端配置项：基础间隔、最大退避时间
+- ✅ 前端 i18n key（`backoffStrategy`、`baseInterval`、`maxBackoffInterval` 等）
+- ✅ 配置数据已存入 workflow 节点 JSON（可随升级保留）
 
 ### 待实现（基于 Dify 1.14.x + graphon）
 
 - [ ] Fork `langgenius/graphon`，在 `RetryConfig` 中添加 `backoff_strategy`、`backoff_multiplier`、`max_backoff_interval` 字段
 - [ ] 在 graphon `error_handler.py` 中实现 `calculate_wait_time()` 并替换 `time.sleep` 调用
-- [ ] 前端节点重试面板新增策略选择器（固定间隔 / 指数退避）
-- [ ] 前端显示基础间隔（100–5000ms）和最大退避时间（1000–60000ms）配置项
-- [ ] 修复测试文件 `api/tests/custom/test_exponential_backoff.py`（重写，针对新实现路径）
+- [ ] 重写测试 `api/tests/custom/test_exponential_backoff.py`（针对新 graphon 路径）
+
+> 当前过渡状态：前端可保存退避配置，后端忽略 backoff 字段（Pydantic 丢弃未知字段），实际以固定间隔重试。升级后补完后端即可恢复完整功能。
 
 ## 退避策略
 
