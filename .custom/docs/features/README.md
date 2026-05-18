@@ -6,16 +6,23 @@
 
 ## 功能总览
 
-| 功能 | 文档 | 功能开关 | 状态 |
+### 已上线
+
+| 功能 | 文档 | 功能开关 |
+|------|------|---------|
+| 追踪搜索 | [workflow-log-search-enhancement.md](workflow-log-search-enhancement.md) | `DIFY_CUSTOM_TRACE_SEARCH_ENABLED` |
+| 原生文档提取 | [native-document-extractors.md](native-document-extractors.md) | `DIFY_CUSTOM_NATIVE_EXTRACTORS_ENABLED` |
+| 多工作空间权限 | [multi-workspace-permission.md](multi-workspace-permission.md) | `DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED` |
+| 代码节点文件输出 | [code-node-file-output.md](code-node-file-output.md) | — |
+| 远程文件操作 | [API 文档](../api/README.md#远程文件操作) | — |
+| 应用日志时区统一 | — | `LOG_TZ` / `DIFY_CUSTOM_LOG_TIMEZONE` |
+
+### 待完成
+
+| 功能 | 文档 | 当前状态 | 待办 |
 |------|------|---------|------|
-| 追踪搜索 | [workflow-log-search-enhancement.md](workflow-log-search-enhancement.md) | `DIFY_CUSTOM_TRACE_SEARCH_ENABLED` | 已上线 |
-| 原生文档提取 | [native-document-extractors.md](native-document-extractors.md) | `DIFY_CUSTOM_NATIVE_EXTRACTORS_ENABLED` | 已上线 |
-| 多工作空间权限 | [multi-workspace-permission.md](multi-workspace-permission.md) | `DIFY_CUSTOM_MULTI_WORKSPACE_PERMISSION_ENABLED` | 已上线 |
-| 代码节点文件输出 | [code-node-file-output.md](code-node-file-output.md) | — | 已上线 |
-| 指数退避重试 | [exponential-backoff-retry.md](exponential-backoff-retry.md) | — | 已上线 |
-| 远程文件操作 | [API 文档](../api/README.md#远程文件操作) | — | 已上线 |
-| 应用日志时区统一 | — | `LOG_TZ` / `DIFY_CUSTOM_LOG_TIMEZONE` | 已上线 |
-| Workflow 费用显示 | — | — | 已上线 |
+| 指数退避重试 | [exponential-backoff-retry.md](exponential-backoff-retry.md) | 后端逻辑已设计，升级至 1.14.x 后重新实现 | 升级后在 graphon 实现后端 + 补全前端配置面板 |
+| Workflow 费用显示 | [workflow-cost-display.md](workflow-cost-display.md) | 字段设计完成，未持久化/未展示 | 接入持久化层 + 前端费用展示组件 |
 
 ---
 
