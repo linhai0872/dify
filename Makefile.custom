@@ -745,7 +745,7 @@ sandbox-info: ## 查看 Sandbox 容器信息
 test-custom: ## 运行二开功能测试
 	@echo "$(GREEN)🧪 运行二开功能测试...$(NC)"
 	@if [ -d "api/tests/custom" ]; then \
-		cd api && uv run pytest tests/custom/ -v --tb=short; \
+		cd api && uv run python -m pytest tests/custom/ -v --tb=short; \
 	else \
 		echo "$(YELLOW)⚠️  api/tests/custom/ 目录不存在，跳过$(NC)"; \
 	fi
