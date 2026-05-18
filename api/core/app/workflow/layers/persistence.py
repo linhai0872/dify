@@ -23,7 +23,8 @@ from core.workflow.system_variables import SystemVariableKey
 from core.workflow.variable_prefixes import SYSTEM_VARIABLE_NODE_ID
 from core.workflow.workflow_run_outputs import project_node_outputs_for_workflow_run
 # [CUSTOM] Use extended WorkflowExecution with external_trace_id support
-from custom.graphon_ext import WorkflowExecution
+from custom.graphon_ext import WorkflowExecutionExt
+# [/CUSTOM]
 from graphon.entities import WorkflowNodeExecution
 from graphon.enums import (
     WorkflowExecutionStatus,
@@ -92,7 +93,7 @@ class WorkflowPersistenceLayer(GraphEngineLayer):
         self._workflow_node_execution_repository = workflow_node_execution_repository
         self._trace_manager = trace_manager
 
-        self._workflow_execution: WorkflowExecution | None = None
+        self._workflow_execution: WorkflowExecutionExt | None = None
         self._node_execution_cache: dict[str, WorkflowNodeExecution] = {}
         self._node_snapshots: dict[str, _NodeRuntimeSnapshot] = {}
         self._node_sequence: int = 0
@@ -164,7 +165,8 @@ class WorkflowPersistenceLayer(GraphEngineLayer):
         execution_id = self._get_execution_id()
         # [CUSTOM] Get external_trace_id from application_generate_entity extras
         external_trace_id = self._application_generate_entity.extras.get("external_trace_id")
-        workflow_execution = WorkflowExecution.new(
+        # [/CUSTOM]
+        workflow_execution = WorkflowExecutionExt.new(
             id_=execution_id,
             workflow_id=self._workflow_info.workflow_id,
             workflow_type=self._workflow_info.workflow_type,
@@ -334,7 +336,7 @@ class WorkflowPersistenceLayer(GraphEngineLayer):
         handled = WorkflowEntry.handle_special_values(inputs)
         return handled or {}
 
-    def _get_workflow_execution(self) -> WorkflowExecution:
+    def _get_workflow_execution(self) -> WorkflowExecutionExt:
         if self._workflow_execution is None:
             raise ValueError("workflow execution not initialized")
         return self._workflow_execution
@@ -348,7 +350,7 @@ class WorkflowPersistenceLayer(GraphEngineLayer):
         self._node_sequence += 1
         return self._node_sequence
 
-    def _populate_completion_statistics(self, execution: WorkflowExecution, *, update_finished: bool = True) -> None:
+    def _populate_completion_statistics(self, execution: WorkflowExecutionExt, *, update_finished: bool = True) -> None:
         if update_finished:
             execution.finished_at = naive_utc_now()
         runtime_state = self.graph_runtime_state
@@ -403,7 +405,7 @@ class WorkflowPersistenceLayer(GraphEngineLayer):
                 execution.elapsed_time = max((now - execution.created_at).total_seconds(), 0.0)
                 self._workflow_node_execution_repository.save(execution)
 
-    def _enqueue_trace_task(self, execution: WorkflowExecution) -> None:
+    def _enqueue_trace_task(self, execution: WorkflowExecutionExt) -> None:
         if not self._trace_manager:
             return
 

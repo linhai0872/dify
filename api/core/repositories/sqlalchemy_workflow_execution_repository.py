@@ -9,8 +9,9 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
 from core.repositories.factory import WorkflowExecutionRepository
-# [CUSTOM] Use extended WorkflowExecution with external_trace_id support
-from custom.graphon_ext import WorkflowExecution
+# [CUSTOM] Use extended WorkflowExecutionExt with external_trace_id support
+from custom.graphon_ext import WorkflowExecutionExt
+# [/CUSTOM]
 from graphon.enums import WorkflowExecutionStatus, WorkflowType
 from graphon.workflow_type_encoder import WorkflowRuntimeTypeConverter
 from libs.helper import extract_tenant_id
@@ -83,7 +84,7 @@ class SQLAlchemyWorkflowExecutionRepository(WorkflowExecutionRepository):
         # Key: execution_id, Value: WorkflowRun (DB model)
         self._execution_cache: dict[str, WorkflowRun] = {}
 
-    def _to_domain_model(self, db_model: WorkflowRun) -> WorkflowExecution:
+    def _to_domain_model(self, db_model: WorkflowRun) -> WorkflowExecutionExt:
         """
         Convert a database model to a domain model.
 
@@ -101,7 +102,7 @@ class SQLAlchemyWorkflowExecutionRepository(WorkflowExecutionRepository):
         # Convert status to domain enum
         status = WorkflowExecutionStatus(db_model.status)
 
-        return WorkflowExecution(
+        return WorkflowExecutionExt(
             id_=db_model.id,
             workflow_id=db_model.workflow_id,
             workflow_type=WorkflowType(db_model.type),
@@ -119,7 +120,7 @@ class SQLAlchemyWorkflowExecutionRepository(WorkflowExecutionRepository):
             external_trace_id=db_model.custom_external_trace_id,  # [CUSTOM]
         )
 
-    def _to_db_model(self, domain_model: WorkflowExecution) -> WorkflowRun:
+    def _to_db_model(self, domain_model: WorkflowExecutionExt) -> WorkflowRun:
         """
         Convert a domain model to a database model.
 
@@ -176,12 +177,13 @@ class SQLAlchemyWorkflowExecutionRepository(WorkflowExecutionRepository):
 
         # [CUSTOM] Set custom_external_trace_id
         db_model.custom_external_trace_id = domain_model.external_trace_id
+        # [/CUSTOM]
 
         return db_model
 
-    def save(self, execution: WorkflowExecution):
+    def save(self, execution: WorkflowExecutionExt):
         """
-        Save or update a WorkflowExecution domain entity to the database.
+        Save or update a WorkflowExecutionExt domain entity to the database.
 
         This method serves as a domain-to-database adapter that:
         1. Converts the domain entity to its database representation
@@ -193,7 +195,7 @@ class SQLAlchemyWorkflowExecutionRepository(WorkflowExecutionRepository):
         SQLAlchemy's merge operation.
 
         Args:
-            execution: The WorkflowExecution domain entity to persist
+            execution: The WorkflowExecutionExt domain entity to persist
         """
         # Convert domain model to database model using tenant context and other attributes
         db_model = self._to_db_model(execution)

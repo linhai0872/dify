@@ -10,7 +10,7 @@ from graphon.enums import WorkflowExecutionStatus, WorkflowType
 from pydantic import Field
 
 
-class WorkflowExecution(_BaseWorkflowExecution):
+class WorkflowExecutionExt(_BaseWorkflowExecution):
     """WorkflowExecution extended with custom_external_trace_id support."""
 
     external_trace_id: str | None = Field(default=None)
@@ -27,7 +27,7 @@ class WorkflowExecution(_BaseWorkflowExecution):
         inputs: Mapping[str, Any],
         started_at: datetime,
         external_trace_id: str | None = None,
-    ) -> WorkflowExecution:
+    ) -> WorkflowExecutionExt:
         return cls(
             id_=id_,
             workflow_id=workflow_id,

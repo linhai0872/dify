@@ -13,8 +13,9 @@ from celery import shared_task
 from sqlalchemy import select
 
 from core.db.session_factory import session_factory
-# [CUSTOM] Use extended WorkflowExecution with external_trace_id support
-from custom.graphon_ext import WorkflowExecution
+# [CUSTOM] Use extended WorkflowExecutionExt with external_trace_id support
+from custom.graphon_ext import WorkflowExecutionExt
+# [/CUSTOM]
 from graphon.workflow_type_encoder import WorkflowRuntimeTypeConverter
 from models import CreatorUserRole, WorkflowRun
 from models.enums import WorkflowRunTriggeredFrom
@@ -36,7 +37,7 @@ def save_workflow_execution_task(
     Asynchronously save or update a workflow execution to the database.
 
     Args:
-        execution_data: Serialized WorkflowExecution data
+        execution_data: Serialized WorkflowExecutionExt data
         tenant_id: Tenant ID for multi-tenancy
         app_id: Application ID
         triggered_from: Source of the execution trigger
@@ -49,7 +50,7 @@ def save_workflow_execution_task(
     try:
         with session_factory.create_session() as session:
             # Deserialize execution data
-            execution = WorkflowExecution.model_validate(execution_data)
+            execution = WorkflowExecutionExt.model_validate(execution_data)
 
             # Check if workflow run already exists
             existing_run = session.scalar(select(WorkflowRun).where(WorkflowRun.id == execution.id_))
@@ -81,7 +82,7 @@ def save_workflow_execution_task(
 
 
 def _create_workflow_run_from_execution(
-    execution: WorkflowExecution,
+    execution: WorkflowExecutionExt,
     tenant_id: str,
     app_id: str,
     triggered_from: WorkflowRunTriggeredFrom,
@@ -89,7 +90,7 @@ def _create_workflow_run_from_execution(
     creator_user_role: CreatorUserRole,
 ) -> WorkflowRun:
     """
-    Create a WorkflowRun database model from a WorkflowExecution domain entity.
+    Create a WorkflowRun database model from a WorkflowExecutionExt domain entity.
     """
     workflow_run = WorkflowRun()
     workflow_run.id = execution.id_
@@ -123,9 +124,9 @@ def _create_workflow_run_from_execution(
     return workflow_run
 
 
-def _update_workflow_run_from_execution(workflow_run: WorkflowRun, execution: WorkflowExecution):
+def _update_workflow_run_from_execution(workflow_run: WorkflowRun, execution: WorkflowExecutionExt):
     """
-    Update a WorkflowRun database model from a WorkflowExecution domain entity.
+    Update a WorkflowRun database model from a WorkflowExecutionExt domain entity.
     """
     json_converter = WorkflowRuntimeTypeConverter()
     workflow_run.status = execution.status
