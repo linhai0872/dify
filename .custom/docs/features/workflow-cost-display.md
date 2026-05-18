@@ -10,7 +10,7 @@
 
 ### 待实现
 
-- [ ] 在 graphon `WorkflowExecution` 域模型中添加 `total_price` 和 `currency` 字段（或通过扩展表方案）
+- [ ] 在 `WorkflowExecutionExt`（`api/custom/graphon_ext.py`）中添加 `total_price` 和 `currency` 字段（优先方案 C；若 graphon 已 fork 则用方案 A）
 - [ ] 在持久化层（`persistence.py`）从 LLM 调用结果中汇总费用并写入
 - [ ] 在 `sqlalchemy_workflow_execution_repository.py` 映射到 DB 列
 - [ ] 数据库迁移：`WorkflowRun` 表新增 `custom_total_price`（Numeric）和 `custom_currency`（String）列
@@ -20,7 +20,20 @@
 
 ## 方案设计
 
-### 方案 A：graphon fork（推荐，与指数退避共用 fork）
+### 方案 C：扩展 WorkflowExecutionExt（推荐，与 external_trace_id 同一模式）
+
+在 `api/custom/graphon_ext.py` 的 `WorkflowExecutionExt` 中添加字段：
+```python
+total_price: Decimal = Field(default=Decimal(0))
+currency: str = Field(default="USD")
+```
+
+持久化层从 `app_generate_entity` 的 LLM usage 数据中聚合费用，同 `external_trace_id` 的写入方式。
+`sqlalchemy_workflow_execution_repository.py` 增加 `custom_total_price` / `custom_currency` 的 DB 映射。
+
+**优先选择此方案**：无需 fork graphon，模式已被 `external_trace_id` 验证，扩展成本最低。
+
+### 方案 A：graphon fork（已降级，仅在指数退避必须 fork 时顺带合并）
 
 在 graphon `WorkflowExecution` 中添加：
 ```python
@@ -28,9 +41,9 @@ total_price: Decimal = Field(default=Decimal(0))
 currency: str = Field(default="USD")
 ```
 
-持久化层从 `app_generate_entity` 的 LLM usage 数据中聚合费用。
+仅在因指数退避功能已经维护 graphon fork 的情况下，顺带在 fork 中添加此字段。
 
-### 方案 B：扩展表（不依赖 graphon fork）
+### 方案 B：扩展表（备选，若字段较多且需单独查询）
 
 新建 `custom_workflow_execution_price` 表：
 ```
