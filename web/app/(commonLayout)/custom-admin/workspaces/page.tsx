@@ -19,7 +19,7 @@ import {
 import Link from 'next/link'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import Button from '@/app/components/base/button'
+import { Button } from '@langgenius/dify-ui/button'
 import { useAdminWorkspaces } from '@/service/custom/admin-member'
 
 export default function WorkspacesPage() {

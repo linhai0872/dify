@@ -23,18 +23,19 @@ import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
 import { useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useAppContext } from '@/context/app-context'
-import { useGlobalPublicStore } from '@/context/global-public-context'
+import { systemFeaturesQueryOptions } from '@/service/system-features'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
 const useCustomLogTimestamp = () => {
   const { userProfile: { timezone: userTimezone } } = useAppContext()
-  const systemFeatures = useGlobalPublicStore(s => s.systemFeatures)
+  const { data: systemFeatures } = useQuery(systemFeaturesQueryOptions())
 
   // Use system log timezone if configured, otherwise fall back to user timezone
-  const effectiveTimezone = systemFeatures.log_timezone || userTimezone
+  const effectiveTimezone = systemFeatures?.log_timezone || userTimezone
 
   /**
    * Format Unix timestamp to string with effective timezone
@@ -55,7 +56,7 @@ const useCustomLogTimestamp = () => {
     formatDate,
     effectiveTimezone,
     // Flag to indicate if unified timezone is active
-    isUnifiedTimezone: !!systemFeatures.log_timezone,
+    isUnifiedTimezone: !!systemFeatures?.log_timezone,
   }
 }
 

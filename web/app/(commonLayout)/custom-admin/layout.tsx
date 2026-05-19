@@ -19,7 +19,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useIsSuperAdmin } from '@/hooks/custom/use-system-role'
-import { cn } from '@/utils/classnames'
+import { cn } from '@langgenius/dify-ui/cn'
 
 type AdminLayoutProps = {
   children: ReactNode

@@ -1,13 +1,14 @@
 'use client'
 
 import type { FC } from 'react'
-import type { SystemRole } from '@/models/custom/admin'
+
+type SystemRole = 'system_admin' | 'tenant_manager' | 'user'
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import Button from '@/app/components/base/button'
+import { Button } from '@langgenius/dify-ui/button'
 import Input from '@/app/components/base/input'
-import { Dialog, DialogCloseButton, DialogContent, DialogTitle } from '@/app/components/base/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/base/ui/select'
+import { Dialog, DialogCloseButton, DialogContent, DialogTitle } from '@langgenius/dify-ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@langgenius/dify-ui/select'
 
 export type CreateUserModalProps = {
   isShow: boolean

@@ -1,7 +1,7 @@
 'use client'
 
 import type { FC } from 'react'
-import { cn } from '@/utils/classnames'
+import { cn } from '@langgenius/dify-ui/cn'
 
 export type RoleBadgeProps = {
   role: string
@@ -37,7 +37,7 @@ const RoleBadge: FC<RoleBadgeProps> = ({
   className,
 }) => {
   const colorMap = type === 'system' ? systemRoleColors : workspaceRoleColors
-  const colors = colorMap[role] || colorMap.normal
+  const colors = (colorMap[role] ?? colorMap.normal)!
 
   return (
     <span

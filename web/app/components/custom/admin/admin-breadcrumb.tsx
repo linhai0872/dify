@@ -8,7 +8,7 @@
 import type { FC } from 'react'
 import { RiArrowRightSLine } from '@remixicon/react'
 import Link from '@/next/link'
-import { cn } from '@/utils/classnames'
+import { cn } from '@langgenius/dify-ui/cn'
 
 export type BreadcrumbItem = {
   label: string

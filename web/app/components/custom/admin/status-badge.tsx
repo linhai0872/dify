@@ -6,7 +6,7 @@
 'use client'
 
 import type { FC } from 'react'
-import { cn } from '@/utils/classnames'
+import { cn } from '@langgenius/dify-ui/cn'
 
 export type StatusBadgeProps = {
   status: 'active' | 'pending' | 'banned' | 'closed'
@@ -47,7 +47,7 @@ const StatusBadge: FC<StatusBadgeProps> = ({
   label,
   className,
 }) => {
-  const config = statusConfig[status] || statusConfig.closed
+  const config = (statusConfig[status] ?? statusConfig.closed)!
 
   return (
     <span

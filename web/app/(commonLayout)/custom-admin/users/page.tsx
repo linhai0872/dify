@@ -19,11 +19,11 @@ import {
 } from '@remixicon/react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import Avatar from '@/app/components/base/avatar'
-import Button from '@/app/components/base/button'
+import { Avatar } from '@langgenius/dify-ui/avatar'
+import { Button } from '@langgenius/dify-ui/button'
 import Pagination from '@/app/components/base/pagination'
 import SearchInput from '@/app/components/base/search-input'
-import { PortalSelect } from '@/app/components/base/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@langgenius/dify-ui/select'
 import { AdminPageHeader, RoleBadge, RoleOperation } from '@/app/components/custom/admin'
 import { useAdminUsers, useSystemRoles, useUpdateUserStatus, useUpdateUserSystemRole } from '@/service/custom/admin-user'
 
@@ -143,20 +143,28 @@ export default function UsersPage() {
         />
 
         {/* Role Filter */}
-        <PortalSelect
-          value={roleFilter}
-          items={roleFilterOptions}
-          onSelect={item => setRoleFilter(item.value as string)}
-          popupClassName="w-[180px]"
-        />
+        <Select value={roleFilter} onValueChange={(v: string | null) => setRoleFilter(v ?? '')}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {roleFilterOptions.map(item => (
+              <SelectItem key={item.value} value={item.value}>{item.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {/* Status Filter */}
-        <PortalSelect
-          value={statusFilter}
-          items={statusFilterOptions}
-          onSelect={item => setStatusFilter(item.value as string)}
-          popupClassName="w-[140px]"
-        />
+        <Select value={statusFilter} onValueChange={(v: string | null) => setStatusFilter(v ?? '')}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {statusFilterOptions.map(item => (
+              <SelectItem key={item.value} value={item.value}>{item.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Users Table */}
@@ -202,7 +210,7 @@ export default function UsersPage() {
                     <div key={user.id} className="flex border-b border-divider-subtle transition-colors hover:bg-state-base-hover">
                       {/* User Info */}
                       <div className="flex grow items-center px-4 py-2">
-                        <Avatar avatar={user.avatar_url} name={user.name} size={32} className="mr-3" />
+                        <Avatar avatar={user.avatar_url} name={user.name} size="lg" className="mr-3" />
                         <div className="min-w-0">
                           <div className="system-sm-medium truncate text-text-secondary">
                             {user.name}
@@ -252,7 +260,7 @@ export default function UsersPage() {
                       {/* Actions */}
                       <div className="flex w-[100px] shrink-0 items-center px-3">
                         <Button
-                          variant={user.status === 'active' ? 'warning' : 'primary'}
+                          variant={user.status === 'active' ? 'ghost' : 'primary'}
                           size="small"
                           onClick={() => handleStatusToggle(user.id, user.status)}
                           disabled={isUpdatingStatus}

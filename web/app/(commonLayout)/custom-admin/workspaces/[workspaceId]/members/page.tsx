@@ -21,10 +21,10 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import Avatar from '@/app/components/base/avatar'
-import Button from '@/app/components/base/button'
+import { Avatar } from '@langgenius/dify-ui/avatar'
+import { Button } from '@langgenius/dify-ui/button'
 import Confirm from '@/app/components/base/confirm'
-import Modal from '@/app/components/base/modal'
+import { Dialog, DialogCloseButton, DialogContent, DialogTitle } from '@langgenius/dify-ui/dialog'
 import SearchInput from '@/app/components/base/search-input'
 import { AdminPageHeader, RoleOperation } from '@/app/components/custom/admin'
 import {
@@ -35,7 +35,7 @@ import {
   useWorkspaceMembers,
   useWorkspaceRoles,
 } from '@/service/custom/admin-member'
-import { cn } from '@/utils/classnames'
+import { cn } from '@langgenius/dify-ui/cn'
 
 export default function WorkspaceMembersPage() {
   const { t } = useTranslation()
@@ -203,7 +203,7 @@ export default function WorkspaceMembersPage() {
                     <div key={member.id} className="flex border-b border-divider-subtle transition-colors hover:bg-state-base-hover">
                       {/* Member Info */}
                       <div className="flex grow items-center px-4 py-2">
-                        <Avatar avatar={member.avatar_url} name={member.name} size={32} className="mr-3" />
+                        <Avatar avatar={member.avatar_url} name={member.name} size="lg" className="mr-3" />
                         <div className="min-w-0">
                           <div className="system-sm-medium truncate text-text-secondary">
                             {member.name}
@@ -236,7 +236,7 @@ export default function WorkspaceMembersPage() {
                       {/* Actions */}
                       <div className="flex w-[100px] shrink-0 items-center px-3">
                         <Button
-                          variant="warning"
+                          variant="ghost"
                           size="small"
                           onClick={() => handleRemoveClick(member.id, member.name)}
                           disabled={isRemoving || (member.role === 'owner' && ownerCount <= 1)}
@@ -251,12 +251,12 @@ export default function WorkspaceMembersPage() {
       </div>
 
       {/* Add Member Modal */}
-      <Modal
-        isShow={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        title={t('admin.addMember', { ns: 'custom' })}
-        closable
-      >
+      <Dialog open={showAddModal} onOpenChange={open => !open && setShowAddModal(false)}>
+        <DialogContent className="max-w-[480px]">
+          <DialogCloseButton />
+          <DialogTitle className="text-text-primary title-2xl-semi-bold">
+            {t('admin.addMember', { ns: 'custom' })}
+          </DialogTitle>
         <div className="mt-4">
           {/* User Search */}
           <div className="mb-4">
@@ -286,7 +286,7 @@ export default function WorkspaceMembersPage() {
                           selectedUserId === user.id && 'bg-state-accent-hover',
                         )}
                       >
-                        <Avatar avatar={user.avatar_url} name={user.name} size={24} />
+                        <Avatar avatar={user.avatar_url} name={user.name} size="md" />
                         <div className="min-w-0 flex-1">
                           <div className="system-sm-medium truncate text-text-primary">{user.name}</div>
                           <div className="system-xs-regular truncate text-text-tertiary">{user.email}</div>
@@ -336,7 +336,8 @@ export default function WorkspaceMembersPage() {
             </Button>
           </div>
         </div>
-      </Modal>
+        </DialogContent>
+      </Dialog>
 
       {/* Remove Confirmation */}
       <Confirm

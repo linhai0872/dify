@@ -50,7 +50,7 @@ const Logs: FC<ILogsProps> = ({ appDetail }) => {
     // [CUSTOM] Use unified log timezone for time range queries
     ...((debouncedQueryParams.period !== '9')
       ? {
-          created_at__after: dayjs().subtract(TIME_PERIOD_MAPPING[debouncedQueryParams.period].value, 'day').startOf('day').tz(effectiveTimezone).format('YYYY-MM-DDTHH:mm:ssZ'),
+          created_at__after: dayjs().subtract(TIME_PERIOD_MAPPING[debouncedQueryParams.period]?.value ?? 1, 'day').startOf('day').tz(effectiveTimezone).format('YYYY-MM-DDTHH:mm:ssZ'),
           created_at__before: dayjs().endOf('day').tz(effectiveTimezone).format('YYYY-MM-DDTHH:mm:ssZ'),
         }
       : {}),

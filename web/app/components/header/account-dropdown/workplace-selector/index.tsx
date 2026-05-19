@@ -49,7 +49,7 @@ const RoleBadge = ({ role }: { role?: string | null }) => {
   }
 
   const displayRole = roleMap[role] || role
-  const colors = workspaceRoleColors[role] || workspaceRoleColors.normal
+  const colors = (workspaceRoleColors[role] ?? workspaceRoleColors.normal)!
 
   return (
     <span className={cn(

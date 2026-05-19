@@ -10,8 +10,8 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/app/components/base/ui/popover'
-import { cn } from '@/utils/classnames'
+} from '@langgenius/dify-ui/popover'
+import { cn } from '@langgenius/dify-ui/cn'
 
 type CustomDatetimeRangePickerProps = {
   startDate: Dayjs | null

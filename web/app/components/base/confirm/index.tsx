@@ -7,8 +7,8 @@ import * as React from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
-import Button from '../button'
-import Tooltip from '../tooltip'
+// [CUSTOM] Updated imports: base/button → dify-ui/button (removed in 1.14.0)
+import { Button } from '@langgenius/dify-ui/button'
 
 /** @deprecated Use `@/app/components/base/ui/alert-dialog` instead. */
 export type IConfirm = {
@@ -57,7 +57,6 @@ function Confirm({
   const dialogRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLDivElement>(null)
   const [isVisible, setIsVisible] = useState(isShow)
-  const [isTitleTruncated, setIsTitleTruncated] = useState(false)
 
   const confirmTxt = confirmText || `${t('operation.confirm', { ns: 'common' })}`
   const cancelTxt = cancelText || `${t('operation.cancel', { ns: 'common' })}`
@@ -102,13 +101,6 @@ function Confirm({
     }
   }, [isShow])
 
-  useEffect(() => {
-    if (titleRef.current) {
-      const isOverflowing = titleRef.current.scrollWidth > titleRef.current.clientWidth
-      setIsTitleTruncated(isOverflowing)
-    }
-  }, [title, isVisible])
-
   if (!isVisible)
     return null
 
@@ -124,17 +116,9 @@ function Confirm({
       <div ref={dialogRef} className="relative w-full max-w-[480px] overflow-hidden">
         <div className="shadows-shadow-lg flex max-w-full flex-col items-start rounded-2xl border-[0.5px] border-solid border-components-panel-border bg-components-panel-bg">
           <div className="flex flex-col items-start gap-2 self-stretch pb-4 pl-6 pr-6 pt-6">
-            <Tooltip
-              popupContent={title}
-              disabled={!isTitleTruncated}
-              portalContentClassName="!z-[10000001]"
-              asChild={false}
-              triggerClassName="w-full"
-            >
-              <div ref={titleRef} className="w-full truncate text-text-primary title-2xl-semi-bold">
-                {title}
-              </div>
-            </Tooltip>
+            <div ref={titleRef} className="w-full truncate text-text-primary title-2xl-semi-bold" title={title}>
+              {title}
+            </div>
             <div className="w-full whitespace-pre-wrap break-words text-text-tertiary system-md-regular">{content}</div>
             {confirmInputLabel && (
               <div className="mt-2">
@@ -153,7 +137,7 @@ function Confirm({
           </div>
           <div className="flex items-start justify-end gap-2 self-stretch p-6">
             {showCancel && <Button onClick={onCancel}>{cancelTxt}</Button>}
-            {showConfirm && <Button variant="primary" destructive={type !== 'info'} loading={isLoading} disabled={isConfirmDisabled} onClick={onConfirm}>{confirmTxt}</Button>}
+            {showConfirm && <Button variant="primary" tone={type !== 'info' ? 'destructive' : 'default'} disabled={isConfirmDisabled || isLoading} onClick={onConfirm}>{confirmTxt}</Button>}
           </div>
         </div>
       </div>

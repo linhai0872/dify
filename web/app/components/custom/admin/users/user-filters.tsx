@@ -3,7 +3,7 @@
 import type { FC } from 'react'
 import { useTranslation } from 'react-i18next'
 import SearchInput from '@/app/components/base/search-input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/base/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@langgenius/dify-ui/select'
 
 export type UserFiltersProps = {
   search: string
@@ -39,7 +39,7 @@ const UserFilters: FC<UserFiltersProps> = ({
       <div className="w-[160px] shrink-0">
         <Select
           value={roleFilter || undefined}
-          onValueChange={v => onRoleFilterChange(v ?? '')}
+          onValueChange={(v: string | null) => onRoleFilterChange(v ?? '')}
         >
           <SelectTrigger className="w-full">
             <SelectValue placeholder={t('admin.filterByRole', { ns: 'custom' })} />
@@ -54,7 +54,7 @@ const UserFilters: FC<UserFiltersProps> = ({
       <div className="w-[140px] shrink-0">
         <Select
           value={statusFilter || undefined}
-          onValueChange={v => onStatusFilterChange(v ?? '')}
+          onValueChange={(v: string | null) => onStatusFilterChange(v ?? '')}
         >
           <SelectTrigger className="w-full">
             <SelectValue placeholder={t('admin.filterByStatus', { ns: 'custom' })} />

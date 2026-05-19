@@ -11,7 +11,7 @@ import {
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogTitle,
-} from '@/app/components/base/ui/alert-dialog'
+} from '@langgenius/dify-ui/alert-dialog'
 
 type UserConfirmDialogsProps = {
   showStatusConfirm: boolean
@@ -123,7 +123,7 @@ const UserConfirmDialogs: FC<UserConfirmDialogsProps> = ({
             <AlertDialogConfirmButton
               loading={isBatchProcessing}
               disabled={isBatchProcessing}
-              destructive={batchAction === 'delete'}
+              tone={batchAction === 'delete' ? 'destructive' : 'default'}
               onClick={onConfirmBatchAction}
             >
               {t('operation.confirm', { ns: 'common' })}
