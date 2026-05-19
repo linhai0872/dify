@@ -58,7 +58,7 @@ const AdminPageHeader = ({
       </div>
 
       {/* Action slot */}
-      {action && (
+      {!!action && (
         <div className="shrink-0">
           {action}
         </div>

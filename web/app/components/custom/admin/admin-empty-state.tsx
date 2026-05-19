@@ -27,7 +27,7 @@ const AdminEmptyState: FC<AdminEmptyStateProps> = ({
       {description && (
         <p className="mt-1 max-w-sm text-center text-text-tertiary system-sm-regular">{description}</p>
       )}
-      {action && (
+      {!!action && (
         <div className="mt-4">{action}</div>
       )}
     </div>
