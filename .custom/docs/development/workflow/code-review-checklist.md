@@ -67,8 +67,8 @@
 - [ ] 不硬编码文本
 - [ ] 自定义 Hook 使用 `useCustom` 前缀
 - [ ] Hook 文件使用 `use-custom-*.ts` 命名
-- [ ] `pnpm lint:fix` 通过（无 lint 报错）
-- [ ] `pnpm type-check:tsgo` 通过（无类型错误）
+- [ ] `pnpm lint:tss` 通过（无 lint 报错）
+- [ ] `pnpm type-check` 通过（无类型错误）
 - [ ] 无 `any` 类型使用
 
 ---
@@ -203,7 +203,7 @@
 cd api && uv run pytest tests/custom/ -v --tb=short
 
 # 前端检查
-cd web && pnpm lint:fix && pnpm type-check:tsgo
+cd web && pnpm lint:tss && pnpm type-check
 
 # 命名规范检查
 grep -r "custom_" api/custom/ web/app/components/custom/ > /dev/null && echo "✅ 命名规范检查通过" || echo "❌ 未检测到 custom 前缀使用"

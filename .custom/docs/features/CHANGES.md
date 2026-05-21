@@ -1,5 +1,32 @@
 # 变更日志
 
+## 基于 Dify 1.14.1
+
+### 修复 (fix)
+
+- 修复 1.14.0 graphon 迁移兼容性：WorkflowExecutionExt 子类保留 external_trace_id [30d70ae]
+- 修复前端 TypeScript 类型错误 - 1.14.0 组件迁移兼容性 [7d66cead]
+- 修复 lint 错误 - ReactNode 条件渲染防泄漏 [e324b22]
+- 修复 make test-custom 在 Mac asdf 环境下失败的问题 [4fc2f79]
+
+### 重构 (refactor)
+
+- 修复二开规范违规：WorkflowExecution 类重命名为 WorkflowExecutionExt，补全标记平衡 [608028f]
+
+### 基础设施 (chore)
+
+- 同步 Dify 1.14.0（dify_graph → graphon 包迁移）
+- 同步 Dify 1.14.1（graphon 0.2.2→0.3.1，docker YAML anchors）
+- 升级后更新 uv.lock - 添加自定义依赖 [a0503543]
+- 升级前清理：移除未完成的 dify_graph 改动 [7407b93]
+- .tool-versions 加入 .gitignore（与 .nvmrc 功能重叠）[7d66cead]
+
+### 文档 (docs)
+
+- 更新费用显示文档 - 新增 WorkflowExecutionExt 扩展方案 [c94b982]
+
+---
+
 ## 基于 Dify 1.13.2
 
 ### 修复 (fix)

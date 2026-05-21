@@ -30,7 +30,7 @@
 2. **编码**：遵循[编码规范](#编码规范)和[命名规范](#命名规范)实现功能
 3. **自测**：运行测试和检查，确认无报错后交付用户验证
    - 后端：`cd api && uv run pytest tests/custom/ -v`
-   - 前端：`cd web && pnpm lint:fix && pnpm type-check:tsgo`
+   - 前端：`cd web && pnpm lint:tss && pnpm type-check`
 4. **审查**：用户验证通过后，按 [code-review-checklist.md](workflow/code-review-checklist.md) 逐项自检并执行快速检查命令
 5. **提交**：格式 `<类型>(<范围>): [CUSTOM] <标题>`，提交到 development 分支
 
